@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 	"time"
 )
@@ -278,29 +279,42 @@ func Delete(key string) error {
 	return nil
 }
 
-// Reset removes all keys for the Brave domain (user prefs) and the managed plist if present.
-func Reset() error {
+// Reset removes the user preferences plist and the managed plist (if present).
+// Brave must be quit first; otherwise the app or cfprefsd can rewrite the plist from cache.
+// Returns (hadManaged, managedRemoved, nil) on success. hadManaged is true if a managed plist
+// existed (so an auth dialog may have been shown). managedRemoved is true if it was removed.
+func Reset() (hadManaged, managedRemoved bool, err error) {
 	if !IsMacOS() {
-		return fmt.Errorf("cowardly only supports macOS")
+		return false, false, fmt.Errorf("cowardly only supports macOS")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), defaultsTimeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "defaults", "delete", Domain)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		if !strings.Contains(string(out), "domain does not exist") {
-			return fmt.Errorf("defaults delete: %w: %s", err, strings.TrimSpace(string(out)))
+	if out, runErr := cmd.CombinedOutput(); runErr != nil {
+		outStr := string(out)
+		// Domain already absent is fine (no user plist to delete).
+		if strings.Contains(outStr, "domain does not exist") || strings.Contains(outStr, "not found") {
+			// continue to remove user plist file and managed plist
+		} else {
+			return false, false, fmt.Errorf("defaults delete: %w: %s", runErr, strings.TrimSpace(outStr))
 		}
 	}
-	// Remove managed plist if present so Brave no longer enforces policies (GUI auth dialog).
-	if _, err := os.Stat(ManagedPreferencesPath + ".plist"); err == nil {
-		dst := ManagedPreferencesPath + ".plist"
-		script := `do shell script "rm -f ` + escapeForAppleScript(shellSingleQuoted(dst)) + `" with administrator privileges`
+	// Explicitly remove the user plist file so it is gone even if defaults left an empty file.
+	if userPath, pathErr := UserPreferencesPath(); pathErr == nil {
+		_ = os.Remove(userPath)
+	}
+	managedPath := ManagedPreferencesPath + ".plist"
+	if _, statErr := os.Stat(managedPath); statErr == nil {
+		hadManaged = true
+		script := `do shell script "rm -f ` + escapeForAppleScript(shellSingleQuoted(managedPath)) + `" with administrator privileges`
 		ctx2, cancel2 := context.WithTimeout(context.Background(), osascriptTimeout)
 		defer cancel2()
 		cmd := exec.CommandContext(ctx2, "osascript", "-e", script)
 		_ = cmd.Run() // ignore error if user cancels
+		_, stillExists := os.Stat(managedPath)
+		managedRemoved = stillExists != nil
 	}
-	return nil
+	return hadManaged, managedRemoved, nil
 }
 
 // BraveAppPath is the default path to the Brave Browser application.
@@ -362,6 +376,18 @@ func UserPreferencesPath() (string, error) {
 	return filepath.Join(home, "Library", "Preferences", Domain+".plist"), nil
 }
 
+// BackupDir returns the backups directory path (~/Library/Application Support/cowardly/backups).
+func BackupDir() (string, error) {
+	if !IsMacOS() {
+		return "", fmt.Errorf("cowardly only supports macOS")
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("home dir: %w", err)
+	}
+	return filepath.Join(home, "Library", "Application Support", "cowardly", "backups"), nil
+}
+
 // BackupUserPlist copies the user preferences plist to ~/Library/Application Support/cowardly/backups/<timestamp>-user.plist.
 // Creates the backup directory if needed. Returns the backup path, or error if the source plist does not exist or copy fails.
 func BackupUserPlist() (string, error) {
@@ -372,8 +398,10 @@ func BackupUserPlist() (string, error) {
 	if _, err := os.Stat(src); err != nil {
 		return "", fmt.Errorf("user plist not found: %w", err)
 	}
-	home, _ := os.UserHomeDir()
-	backupDir := filepath.Join(home, "Library", "Application Support", "cowardly", "backups")
+	backupDir, err := BackupDir()
+	if err != nil {
+		return "", err
+	}
 	if err := os.MkdirAll(backupDir, 0755); err != nil {
 		return "", fmt.Errorf("create backup dir: %w", err)
 	}
@@ -387,6 +415,59 @@ func BackupUserPlist() (string, error) {
 		return "", fmt.Errorf("write backup: %w", err)
 	}
 	return dst, nil
+}
+
+// ListBackups returns paths to existing backup plists in the backup directory, newest first (by filename timestamp).
+func ListBackups() ([]string, error) {
+	dir, err := BackupDir()
+	if err != nil {
+		return nil, err
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("read backup dir: %w", err)
+	}
+	var paths []string
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		if strings.HasSuffix(e.Name(), "-user.plist") {
+			paths = append(paths, filepath.Join(dir, e.Name()))
+		}
+	}
+	// Newest first (filename format 2006-01-02T15-04-05-user.plist sorts lexicographically)
+	sort.Slice(paths, func(i, j int) bool {
+		return paths[i] > paths[j]
+	})
+	return paths, nil
+}
+
+// RestoreFromBackup copies a backup plist over the current user preferences. Restart Brave for changes to take effect.
+func RestoreFromBackup(backupPath string) error {
+	dst, err := UserPreferencesPath()
+	if err != nil {
+		return err
+	}
+	data, err := os.ReadFile(backupPath)
+	if err != nil {
+		return fmt.Errorf("read backup: %w", err)
+	}
+	if err := os.WriteFile(dst, data, 0600); err != nil {
+		return fmt.Errorf("write user plist: %w", err)
+	}
+	return nil
+}
+
+// DeleteBackup removes a backup file from disk.
+func DeleteBackup(backupPath string) error {
+	if err := os.Remove(backupPath); err != nil {
+		return fmt.Errorf("delete backup: %w", err)
+	}
+	return nil
 }
 
 // DryRun returns a human-readable description of what ApplySettings would write (without writing).

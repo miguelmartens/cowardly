@@ -53,6 +53,15 @@ func main() {
 		case strings.HasPrefix(arg, "apply-file="):
 			applyFile(strings.TrimPrefix(arg, "apply-file="))
 			return
+		case arg == "backups" || arg == "b":
+			listBackups()
+			return
+		case strings.HasPrefix(arg, "restore="):
+			restoreBackup(strings.TrimPrefix(arg, "restore="))
+			return
+		case strings.HasPrefix(arg, "delete-backup="):
+			deleteBackup(strings.TrimPrefix(arg, "delete-backup="))
+			return
 		}
 	}
 
@@ -213,15 +222,25 @@ func exportKeysList() []string {
 }
 
 func reset() {
+	if brave.BraveRunning() {
+		fmt.Fprintln(os.Stderr, "Brave is running. Quit Brave (Cmd+Q), then run reset again. If Brave is running, it can restore the plist from memory and the reset will not stick.")
+		os.Exit(1)
+	}
 	if path, err := brave.BackupUserPlist(); err == nil {
 		fmt.Fprintf(os.Stderr, "Backed up user plist to %s\n", path)
 	}
-	if err := brave.Reset(); err != nil {
+	hadManaged, managedRemoved, err := brave.Reset()
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "reset failed: %v\n", err)
 		os.Exit(1)
 	}
-	fmt.Println("All Brave policy settings reset. Restart Brave.")
-	fmt.Println("If you cancelled the authentication dialog, the managed plist may still exist; run reset again and approve to remove it.")
+	if !hadManaged {
+		fmt.Println("User preferences cleared. No managed policy file was present, so no authentication was needed. Restart Brave.")
+	} else if managedRemoved {
+		fmt.Println("All Brave policy settings reset (including managed). Restart Brave.")
+	} else {
+		fmt.Println("User preferences cleared. The managed policy file could not be removed (did you cancel the authentication?). Run reset again and approve the dialog.")
+	}
 }
 
 func view() {
@@ -252,6 +271,72 @@ func view() {
 	}
 }
 
+func listBackups() {
+	paths, err := brave.ListBackups()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "list backups: %v\n", err)
+		os.Exit(1)
+	}
+	if len(paths) == 0 {
+		fmt.Println("No backups. Apply a preset or reset to create one.")
+		return
+	}
+	for _, p := range paths {
+		fmt.Println(p)
+	}
+}
+
+func restoreBackup(path string) {
+	path = resolveBackupPath(path)
+	if path == "" {
+		fmt.Fprintln(os.Stderr, "Backup not found. Use --backups to list paths.")
+		os.Exit(1)
+	}
+	if brave.BraveRunning() {
+		fmt.Fprintln(os.Stderr, "Warning: Brave is running. Quit Brave for a clean restore.")
+	}
+	if err := brave.RestoreFromBackup(path); err != nil {
+		fmt.Fprintf(os.Stderr, "restore failed: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Println("Restored backup. Restart Brave for changes to take effect.")
+}
+
+func deleteBackup(path string) {
+	path = resolveBackupPath(path)
+	if path == "" {
+		fmt.Fprintln(os.Stderr, "Backup not found. Use --backups to list paths.")
+		os.Exit(1)
+	}
+	if err := brave.DeleteBackup(path); err != nil {
+		fmt.Fprintf(os.Stderr, "delete failed: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Println("Backup deleted.")
+}
+
+// resolveBackupPath returns the full path if path is a filename matching a backup, or path if it's already a full path that exists.
+func resolveBackupPath(path string) string {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return ""
+	}
+	paths, err := brave.ListBackups()
+	if err != nil {
+		return ""
+	}
+	for _, p := range paths {
+		if p == path || strings.HasSuffix(p, path) || strings.HasSuffix(p, "/"+path) {
+			return p
+		}
+	}
+	// path might be full path that wasn't in list (e.g. stale); still allow if file exists
+	if _, err := os.Stat(path); err == nil {
+		return path
+	}
+	return ""
+}
+
 func printUsage() {
 	fmt.Println(`cowardly — Brave Browser debloater for macOS
 
@@ -265,6 +350,9 @@ Usage:
   cowardly --export=<path>         Export current settings to YAML file
   cowardly --reset, -r             Reset all Brave policy settings and exit
   cowardly --view, -v              Print current settings and exit
+  cowardly --backups, -b           List all backup plist paths
+  cowardly --restore=<path>        Restore user prefs from a backup (path or filename)
+  cowardly --delete-backup=<path>  Delete a backup file
   cowardly --help, -h              Show this help
 
 Restart Brave Browser after applying or resetting settings.`)

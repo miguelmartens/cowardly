@@ -8,9 +8,13 @@ Inspired by [SlimBrave](https://github.com/ltx0101/SlimBrave), [Debloat Brave Br
 
 ## Requirements
 
-- **macOS** only (uses `defaults` and `~/Library/Preferences/com.brave.Browser.plist`)
+- **macOS** only today (uses `defaults` and `~/Library/Preferences/com.brave.Browser.plist`)
 - **Go 1.25.6+** to build
 - **Brave Browser** installed in `/Applications/Brave Browser.app` (tested with Brave stable; policy keys may vary by Brave version)
+
+**Platform support:** Cowardly currently supports **macOS** only. Support for **Linux** and **Windows** may be added in the future; see **[docs/PLATFORMS.md](docs/PLATFORMS.md)** for the current scope and possible directions.
+
+**Platform support:** Cowardly currently supports **macOS only**. Support for **Linux** and **Windows** may be added in the future; on those platforms Brave uses different policy mechanisms (e.g. JSON on Linux, registry/Group Policy on Windows). See **[docs/PLATFORMS.md](docs/PLATFORMS.md)** for details and contribution notes.
 
 ## Install
 
@@ -100,13 +104,25 @@ After applying or resetting, **restart Brave Browser** for changes to take effec
   cowardly -v
   ```
 
+- **List, restore, or delete backups** (plists in `~/Library/Application Support/cowardly/backups/`)
+
+  ```bash
+  cowardly --backups              # list all backup paths
+  cowardly --restore=<path>        # restore user prefs from a backup (path or filename)
+  cowardly --delete-backup=<path>  # delete a backup file
+  ```
+
+  In the TUI, use **Backups** from the main menu to list backups, then **Enter** to restore or **d** to delete (with confirmation).
+
 - **Help**
   ```bash
   cowardly --help
   cowardly -h
   ```
 
-Before apply or reset, the **user plist is backed up** to `~/Library/Application Support/cowardly/backups/`. If Brave is running, the CLI and TUI warn you to quit for a clean apply.
+Before apply or reset, the **user plist is backed up** to `~/Library/Application Support/cowardly/backups/`. **Quit Brave (Cmd+Q) before resetting**—if Brave is running, macOS or Brave can rewrite the plist from cache and the reset will not stick. Brave’s in-browser “Restore settings to their original default” cannot remove **managed** policy (the plist in `/Library/Managed Preferences/`). To fully reset, use cowardly’s Reset and **approve the authentication dialog** so the managed plist is removed; then restart Brave.
+
+**Organizational management (MDM / Intune):** If your Mac is managed by an employer or school (e.g. Microsoft Intune), they can push Brave/Chrome policies that override local settings. In that case Rewards/Wallet may stay disabled and “Managed by your organization” will remain even after Reset or reinstalling Brave; only your IT admin can change that. See **[docs/POLICY-ENFORCEMENT.md](docs/POLICY-ENFORCEMENT.md)** for details.
 
 ## Presets
 
@@ -134,7 +150,7 @@ Use **Space** to toggle, **Enter** to apply, **a** to select all, **n** to selec
 
 ## Project layout
 
-The repo follows the [Standard Go Project Layout](https://github.com/golang-standards/project-layout). See **[docs/PROJECT-LAYOUT.md](docs/PROJECT-LAYOUT.md)** for the directory overview. **[docs/POLICY-ENFORCEMENT.md](docs/POLICY-ENFORCEMENT.md)** explains how policy enforcement works on macOS (managed vs user preferences, raw XML plist, AppleScript auth).
+The repo follows the [Standard Go Project Layout](https://github.com/golang-standards/project-layout). See **[docs/PROJECT-LAYOUT.md](docs/PROJECT-LAYOUT.md)** for the directory overview, **[docs/PLATFORMS.md](docs/PLATFORMS.md)** for current and possible future platform support (macOS / Linux / Windows), and **[docs/POLICY-ENFORCEMENT.md](docs/POLICY-ENFORCEMENT.md)** for how policy enforcement works on macOS (managed vs user preferences, raw XML plist, AppleScript auth).
 
 ## Development
 

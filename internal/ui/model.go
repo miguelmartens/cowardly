@@ -16,12 +16,18 @@ const (
 	stateCustom
 	stateViewSettings
 	stateResetConfirm
+	stateBackups
+	stateBackupConfirm
 )
 
 type model struct {
 	state          state
 	mainList       list.Model
 	presetList     list.Model
+	backupList     list.Model
+	backupPaths    []string
+	confirmPath    string
+	confirmAction  string // "restore" or "delete"
 	customIdx      int
 	customOrder    []int // indices in display order (by category)
 	customToggles  map[int]bool
@@ -34,19 +40,42 @@ type model struct {
 	msg            string
 }
 
+// Brave brand orange and palette (Brave orange #ff631c, lighter accent #ff9f5c).
 var (
-	titleStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("62")).
-			MarginBottom(1)
-	activeStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("170")).
-			Bold(true)
-	checkStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("78"))
+	braveOrange  = lipgloss.Color("#ff631c")
+	braveAccent  = lipgloss.Color("#ff9f5c")
+	titleStyle   = lipgloss.NewStyle().Bold(true).Foreground(braveOrange).MarginBottom(1)
+	activeStyle  = lipgloss.NewStyle().Foreground(braveAccent).Bold(true)
+	checkStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#4caf50"))
 	dimStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
 	errorStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("196"))
-	successStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("78"))
+	successStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#4caf50"))
 )
+
+// braveListDelegate returns a list delegate with Brave orange for the selected item (replaces default purple/pink).
+func braveListDelegate() list.DefaultDelegate {
+	d := list.NewDefaultDelegate()
+	s := list.NewDefaultItemStyles()
+	s.SelectedTitle = lipgloss.NewStyle().
+		Border(lipgloss.NormalBorder(), false, false, false, true).
+		BorderForeground(braveOrange).
+		Foreground(braveAccent).
+		Padding(0, 0, 0, 1)
+	s.SelectedDesc = s.SelectedTitle.Foreground(braveOrange)
+	d.Styles = s
+	return d
+}
+
+// braveListStyles returns list styles with Brave orange title bar and filter cursor.
+func braveListStyles() list.Styles {
+	sty := list.DefaultStyles()
+	sty.Title = lipgloss.NewStyle().
+		Background(braveOrange).
+		Foreground(lipgloss.Color("230")).
+		Padding(0, 1)
+	sty.FilterCursor = lipgloss.NewStyle().Foreground(braveAccent)
+	return sty
+}
 
 // NewModel returns the initial Bubble Tea model for the TUI.
 func NewModel() model {
@@ -55,10 +84,12 @@ func NewModel() model {
 		item{title: "Custom", desc: "Choose exactly which settings to apply"},
 		item{title: "View current settings", desc: "See what's currently configured"},
 		item{title: "Reset all to default", desc: "Remove all Brave policy settings"},
+		item{title: "Backups", desc: "List, restore, or delete backup plists"},
 		item{title: "Exit", desc: "Quit cowardly"},
 	}
-	mainList := list.New(mainItems, list.NewDefaultDelegate(), 0, 0)
+	mainList := list.New(mainItems, braveListDelegate(), 0, 0)
 	mainList.Title = "Cowardly — Brave Browser Debloater"
+	mainList.Styles = braveListStyles()
 	mainList.SetShowStatusBar(false)
 
 	presetItems := make([]list.Item, 0, len(presets.All())+1)
@@ -66,8 +97,9 @@ func NewModel() model {
 	for _, p := range presets.All() {
 		presetItems = append(presetItems, item{title: p.Name, desc: p.Description})
 	}
-	presetList := list.New(presetItems, list.NewDefaultDelegate(), 0, 0)
+	presetList := list.New(presetItems, braveListDelegate(), 0, 0)
 	presetList.Title = "Choose a preset"
+	presetList.Styles = braveListStyles()
 	presetList.SetShowStatusBar(false)
 
 	customSettings := config.CustomSettings()
@@ -98,10 +130,19 @@ func NewModel() model {
 		"SpellcheckEnabled", "PromotionsEnabled", "DnsOverHttpsMode",
 	}
 
+	backupList := list.New([]list.Item{}, braveListDelegate(), 0, 0)
+	backupList.Title = "Backups"
+	backupList.Styles = braveListStyles()
+	backupList.SetShowStatusBar(false)
+
 	return model{
 		state:          stateMain,
 		mainList:       mainList,
 		presetList:     presetList,
+		backupList:     backupList,
+		backupPaths:    nil,
+		confirmPath:    "",
+		confirmAction:  "",
 		customIdx:      0,
 		customOrder:    order,
 		customToggles:  toggles,

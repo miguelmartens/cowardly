@@ -14,7 +14,7 @@ This project follows the [Standard Go Project Layout](https://github.com/golang-
 | **internal/ui**      | Bubble Tea TUI (model, update, view).                                                                                                                                                        |
 | **configs/**         | Configuration templates. **configs/presets/** holds preset YAML files (embedded at build). See [configs/README.md](../configs/README.md).                                                    |
 | **scripts/**         | Build and tool scripts; invoked by the root Makefile.                                                                                                                                        |
-| **docs/**            | Design and user documentation (this file).                                                                                                                                                   |
+| **docs/**            | Design and user documentation (this file). [PLATFORMS.md](PLATFORMS.md) describes current (macOS) and possible future (Linux, Windows) support.                                              |
 | **assets/**          | Images and logos (e.g. `cowardly-logo.png`).                                                                                                                                                 |
 | **bin/**             | Build output; executable from `make build`. Gitignored.                                                                                                                                      |
 

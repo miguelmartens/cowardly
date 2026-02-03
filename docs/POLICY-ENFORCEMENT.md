@@ -1,6 +1,6 @@
 # Policy enforcement on macOS
 
-This document describes why Cowardly writes to **managed preferences** when possible, and how that implementation works.
+This document describes why Cowardly writes to **managed preferences** when possible, and how that implementation works. Cowardly currently supports **macOS** only; for possible future Linux and Windows support, see [PLATFORMS.md](PLATFORMS.md).
 
 ## The issue
 
@@ -56,6 +56,20 @@ chmod 644 "/Library/Managed Preferences/com.brave.Browser.plist"
 
 **Reset** removes keys from the user domain with `defaults delete com.brave.Browser`. If the managed plist exists, we also try to **remove** it via the same AppleScript-with-admin pattern so that Brave no longer enforces any of our policies. If the user cancels the dialog, the managed plist is left in place.
 
+## Organizational management (MDM / Intune)
+
+Your Mac may be **managed by an organization** (MDM, e.g. Microsoft Intune, Jamf, Kandji). In that case:
+
+- The organization can push **Chrome/Brave policies** (e.g. `BraveRewardsDisabled`, `BraveWalletDisabled`) that apply as **Platform / Machine / Mandatory**.
+- Those policies are enforced by the system and may **override** or **coexist with** anything Cowardly writes to the local managed plist.
+- In `brave://policy`, such policies show **Source: Platform**, **Level: Mandatory**. The plist at `/Library/Managed Preferences/com.brave.Browser.plist` may be **absent** (no such file) because the MDM delivers policy through a different mechanism (e.g. configuration profiles), but Brave still applies them.
+
+**If you see “Managed by your organization” or Rewards/Wallet stay disabled after Reset or a full reinstall:**
+
+1. Check **System Settings → Privacy & Security → Profiles** (or **Profiles** in System Preferences). If the device is “supervised and managed by” a company (e.g. Cegeka, your employer), that management is the source.
+2. Cowardly and the fresh-brave script **cannot remove** MDM-applied policies. Only your IT admin can change or remove the Brave/Chrome policy for your device.
+3. On an **unmanaged** Mac, Reset and the script clear local plists and Brave returns to an unmanaged state; on a managed Mac, organizational policy continues to apply until IT changes it.
+
 ## Summary
 
 | Aspect          | Choice                                                               | Reason                                                              |
@@ -65,6 +79,7 @@ chmod 644 "/Library/Managed Preferences/com.brave.Browser.plist"
 | **Admin**       | AppleScript “with administrator privileges”                          | GUI auth dialog; works from TUI and CLI.                            |
 | **Permissions** | `chown root:wheel`, `chmod 644`                                      | Standard for managed prefs; readable by Brave.                      |
 | **Fallback**    | User preferences via `defaults write`                                | Works without admin; user is informed enforcement may not apply.    |
+| **MDM**         | Organizational policies (Intune, etc.)                               | Can override local plists; only IT can remove them.                 |
 
 ## References
 
