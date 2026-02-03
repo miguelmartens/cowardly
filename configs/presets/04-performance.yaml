@@ -1,0 +1,77 @@
+# Performance Focused: minimal telemetry, Brave features off, background and promotions off.
+id: performance
+name: Performance Focused
+description: Disable metrics and Brave Rewards/Wallet/VPN/AI; turn off background and promotions.
+settings:
+  # Telemetry (minimal)
+  - key: MetricsReportingEnabled
+    value: false
+    type: bool
+  - key: FeedbackSurveysEnabled
+    value: false
+    type: bool
+  # Brave features
+  - key: BraveRewardsDisabled
+    value: true
+    type: bool
+  - key: BraveWalletDisabled
+    value: true
+    type: bool
+  - key: CryptoWalletEnabled
+    value: false
+    type: bool
+  - key: BraveVPNDisabled
+    value: true
+    type: bool
+  - key: BraveAIChatEnabled
+    value: false
+    type: bool
+  - key: BraveLeoEnabled
+    value: false
+    type: bool
+  - key: BraveChatEnabled
+    value: false
+    type: bool
+  - key: BraveAIEnabled
+    value: false
+    type: bool
+  - key: TorDisabled
+    value: true
+    type: bool
+  - key: SyncDisabled
+    value: true
+    type: bool
+  # Performance / bloat
+  - key: BackgroundModeEnabled
+    value: false
+    type: bool
+  - key: MediaRecommendationsEnabled
+    value: false
+    type: bool
+  - key: ShoppingListEnabled
+    value: false
+    type: bool
+  - key: AlwaysOpenPdfExternally
+    value: true
+    type: bool
+  - key: TranslateEnabled
+    value: false
+    type: bool
+  - key: SpellcheckEnabled
+    value: false
+    type: bool
+  - key: PromotionsEnabled
+    value: false
+    type: bool
+  - key: SearchSuggestEnabled
+    value: false
+    type: bool
+  - key: PrintingEnabled
+    value: false
+    type: bool
+  - key: DefaultBrowserSettingEnabled
+    value: false
+    type: bool
+  - key: DeveloperToolsDisabled
+    value: true
+    type: bool

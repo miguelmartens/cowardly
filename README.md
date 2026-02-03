@@ -1,2 +1,127 @@
-# cowardly
-Cowardly — removes Brave’s bold features and returns it to a quiet, minimal, privacy-first browser on macOS.
+![](assets/cowardly-logo.png)
+
+# Cowardly
+
+**Cowardly** removes Brave’s bold features and returns it to a quiet, minimal, privacy-first browser on macOS. It is a small TUI (terminal UI) and CLI that applies Brave Browser policy preferences via macOS `defaults` so you can disable rewards, wallet, VPN, AI, telemetry, and other bloat without editing plists by hand.
+
+Inspired by [SlimBrave](https://github.com/ltx0101/SlimBrave), [Debloat Brave Browser (macOS)](https://github.com/hi-one/hi-one/blob/main/Debloat-Brave-Browser-MacOS.md), [bebrave](https://github.com/ricardorodrigues-ca/bebrave), and [slimbrave-macos](https://github.com/vladandrei51/slimbrave-macos).
+
+## Requirements
+
+- **macOS** only (uses `defaults` and `~/Library/Preferences/com.brave.Browser.plist`)
+- **Go 1.25.6+** to build
+- **Brave Browser** installed in `/Applications/Brave Browser.app`
+
+## Install
+
+```bash
+git clone https://github.com/yourusername/cowardly.git
+cd cowardly
+make build
+./bin/cowardly
+```
+
+Or install into `$(go env GOPATH)/bin`:
+
+```bash
+make install
+cowardly
+```
+
+To build and run from the repo (e.g. for development):
+
+```bash
+make run
+```
+
+## Usage
+
+### TUI (default)
+
+Run with no arguments to start the interactive TUI:
+
+```bash
+cowardly
+```
+
+- **Apply a preset** — Choose a preset (Quick Debloat, Maximum Privacy, Balanced, Performance, Developer, Strict Parental) and apply it.
+- **Custom** — Toggle individual settings by category (Telemetry, Privacy & Security, Brave Features, Performance & Bloat), then apply.
+- **View current settings** — See which policy keys are set.
+- **Reset all to default** — Remove all Brave policy settings (restore defaults).
+- **Exit** — Quit.
+
+After applying or resetting, **restart Brave Browser** for changes to take effect.
+
+**Enforced policies:** Cowardly first tries to write to `/Library/Managed Preferences/com.brave.Browser.plist` so Brave enforces the policies (hides Rewards, Wallet, etc.). A **macOS authentication dialog** appears (password or Touch ID)—use that to approve; you don’t type the password in the terminal. If you cancel or don’t have admin rights, settings are written to user preferences only; Brave may still show those features. Reset may also show the dialog if the managed plist exists. See **[docs/POLICY-ENFORCEMENT.md](docs/POLICY-ENFORCEMENT.md)** for why this is needed and how it is implemented.
+
+### CLI (non-interactive)
+
+- **Apply Quick Debloat preset and exit**
+
+  ```bash
+  cowardly --apply
+  # or
+  cowardly -a
+  ```
+
+- **Reset all Brave policy settings and exit**
+
+  ```bash
+  cowardly --reset
+  cowardly -r
+  ```
+
+- **Print current settings and exit**
+
+  ```bash
+  cowardly --view
+  cowardly -v
+  ```
+
+- **Help**
+  ```bash
+  cowardly --help
+  cowardly -h
+  ```
+
+## Presets
+
+Presets are **YAML** files in [configs/presets/](configs/presets/). Add a new preset by adding a `.yaml` file there and rebuilding. See **[docs/ADDING-PRESETS.md](docs/ADDING-PRESETS.md)** for the format and instructions.
+
+| Preset                          | Description                                                                          |
+| ------------------------------- | ------------------------------------------------------------------------------------ |
+| **Quick Debloat (Recommended)** | Disable telemetry, Brave Rewards/Wallet/VPN/AI/Tor, and common bloat.                |
+| **Maximum Privacy**             | Blocks all telemetry, disables Brave extras, autofill, Do Not Track, plain DNS.      |
+| **Balanced Privacy**            | Blocks telemetry and Brave bloat; keeps password manager; DoH automatic.             |
+| **Performance Focused**         | Disable metrics and Brave Rewards/Wallet/VPN/AI; turn off background and promotions. |
+| **Developer**                   | Same as above but keeps developer tools.                                             |
+| **Strict Parental Controls**    | Disable incognito, force SafeSearch, disable sign-in and developer tools.            |
+
+## Custom settings
+
+In **Custom** mode you can toggle individual settings in four categories:
+
+- **Telemetry & Privacy** — Metrics, Safe Browsing reporting, URL collection, feedback surveys.
+- **Privacy & Security** — Safe Browsing level, autofill, password manager, sign-in, WebRTC, QUIC, cookies, Do Not Track, SafeSearch, IPFS, incognito.
+- **Brave Features** — Rewards, Wallet, VPN, AI Chat, Tor, Sync.
+- **Performance & Bloat** — Background mode, recommendations, shopping list, PDF externally, translate, spellcheck, promotions, search suggestions, printing, default browser prompt, developer tools.
+
+Use **Space** to toggle, **Enter** to apply, **a** to select all, **n** to select none.
+
+## Project layout
+
+The repo follows the [Standard Go Project Layout](https://github.com/golang-standards/project-layout). See **[docs/PROJECT-LAYOUT.md](docs/PROJECT-LAYOUT.md)** for the directory overview. **[docs/POLICY-ENFORCEMENT.md](docs/POLICY-ENFORCEMENT.md)** explains how policy enforcement works on macOS (managed vs user preferences, raw XML plist, AppleScript auth).
+
+## Development
+
+- Format: `make fmt` or `gofmt -s -w .`
+- Lint: `make lint` (requires [golangci-lint](https://golangci-lint.run) v2). For all config options see [.golangci.reference.yml](https://github.com/golangci/golangci-lint/blob/HEAD/.golangci.reference.yml).
+- Tests: `make test`
+
+## Disclaimer
+
+This tool is not affiliated with Brave Software. It only changes macOS preference (policy) keys that Brave already supports. Use at your own risk; backup or note your settings before resetting.
+
+## License
+
+MIT. See [LICENSE](LICENSE).

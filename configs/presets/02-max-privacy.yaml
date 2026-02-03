@@ -1,0 +1,118 @@
+# Maximum Privacy: all telemetry off, max privacy, plain DNS.
+id: max-privacy
+name: Maximum Privacy
+description: Blocks all telemetry, disables Brave extras, autofill, Do Not Track, plain DNS.
+settings:
+  # Telemetry
+  - key: MetricsReportingEnabled
+    value: false
+    type: bool
+  - key: SafeBrowsingExtendedReportingEnabled
+    value: false
+    type: bool
+  - key: UrlKeyedAnonymizedDataCollectionEnabled
+    value: false
+    type: bool
+  - key: FeedbackSurveysEnabled
+    value: false
+    type: bool
+  # Privacy max
+  - key: AutofillAddressEnabled
+    value: false
+    type: bool
+  - key: AutofillCreditCardEnabled
+    value: false
+    type: bool
+  - key: PasswordManagerEnabled
+    value: false
+    type: bool
+  - key: BrowserSignin
+    value: 0
+    type: integer
+  - key: WebRtcIPHandling
+    value: disable_non_proxied_udp
+    type: string
+  - key: QuicAllowed
+    value: false
+    type: bool
+  - key: BlockThirdPartyCookies
+    value: true
+    type: bool
+  - key: EnableDoNotTrack
+    value: true
+    type: bool
+  - key: IPFSEnabled
+    value: false
+    type: bool
+  - key: IncognitoModeAvailability
+    value: 1
+    type: integer
+  # Brave features
+  - key: BraveRewardsDisabled
+    value: true
+    type: bool
+  - key: BraveWalletDisabled
+    value: true
+    type: bool
+  - key: CryptoWalletEnabled
+    value: false
+    type: bool
+  - key: BraveVPNDisabled
+    value: true
+    type: bool
+  - key: BraveAIChatEnabled
+    value: false
+    type: bool
+  - key: BraveLeoEnabled
+    value: false
+    type: bool
+  - key: BraveChatEnabled
+    value: false
+    type: bool
+  - key: BraveAIEnabled
+    value: false
+    type: bool
+  - key: TorDisabled
+    value: true
+    type: bool
+  - key: SyncDisabled
+    value: true
+    type: bool
+  # Performance / bloat
+  - key: BackgroundModeEnabled
+    value: false
+    type: bool
+  - key: MediaRecommendationsEnabled
+    value: false
+    type: bool
+  - key: ShoppingListEnabled
+    value: false
+    type: bool
+  - key: AlwaysOpenPdfExternally
+    value: true
+    type: bool
+  - key: TranslateEnabled
+    value: false
+    type: bool
+  - key: SpellcheckEnabled
+    value: false
+    type: bool
+  - key: PromotionsEnabled
+    value: false
+    type: bool
+  - key: SearchSuggestEnabled
+    value: false
+    type: bool
+  - key: PrintingEnabled
+    value: false
+    type: bool
+  - key: DefaultBrowserSettingEnabled
+    value: false
+    type: bool
+  - key: DeveloperToolsDisabled
+    value: true
+    type: bool
+  # DNS
+  - key: DnsOverHttpsMode
+    value: off
+    type: string
