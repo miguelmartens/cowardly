@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io/fs"
 	"log"
+	"os"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -13,6 +15,9 @@ import (
 	"github.com/cowardly/cowardly/internal/brave"
 	"gopkg.in/yaml.v3"
 )
+
+// policyKeyRegex matches Chromium/Brave policy key names (PascalCase, letters and digits).
+var policyKeyRegex = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9]*$`)
 
 // presetFile is the on-disk shape of a preset YAML file.
 type presetFile struct {
@@ -34,16 +39,22 @@ var cachedPresets []Preset
 // Order is determined by filename (01-quick, 02-max-privacy, ...).
 // On load error, logs and returns nil.
 func All() []Preset {
+	list, _ := AllWithError()
+	return list
+}
+
+// AllWithError returns presets and any load/validation error. Use this at startup to surface failures.
+func AllWithError() ([]Preset, error) {
 	if cachedPresets != nil {
-		return cachedPresets
+		return cachedPresets, nil
 	}
 	list, err := LoadFromFS(configs.PresetsFS, "presets")
 	if err != nil {
 		log.Printf("presets: load failed: %v", err)
-		return nil
+		return nil, err
 	}
 	cachedPresets = list
-	return cachedPresets
+	return cachedPresets, nil
 }
 
 // LoadFromFS reads preset YAML files from the given fs.FS under the given dir (e.g. "presets").
@@ -89,6 +100,12 @@ func LoadFromFS(fsys fs.FS, dir string) ([]Preset, error) {
 func convertSettings(rows []settingRow) ([]brave.Setting, error) {
 	out := make([]brave.Setting, 0, len(rows))
 	for i, r := range rows {
+		if r.Key == "" {
+			return nil, fmt.Errorf("setting %d: key is empty", i)
+		}
+		if !policyKeyRegex.MatchString(r.Key) {
+			return nil, fmt.Errorf("setting %d %q: key must match [A-Za-z][A-Za-z0-9]* (Chromium policy name)", i, r.Key)
+		}
 		val, vt, err := normalizeValue(r.Value, r.Type)
 		if err != nil {
 			return nil, fmt.Errorf("setting %d %q: %w", i, r.Key, err)
@@ -150,4 +167,36 @@ func toString(v interface{}) (string, error) {
 		return s, nil
 	}
 	return "", fmt.Errorf("cannot convert %T to string", v)
+}
+
+// settingsFile is the on-disk shape for YAML that contains only a settings list (export/import).
+type settingsFile struct {
+	Settings []settingRow `yaml:"settings"`
+}
+
+// LoadSettingsFromFile reads a YAML file (with a "settings" list) and returns brave settings.
+func LoadSettingsFromFile(path string) ([]brave.Setting, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("read file: %w", err)
+	}
+	var f settingsFile
+	if err := yaml.Unmarshal(data, &f); err != nil {
+		return nil, fmt.Errorf("parse YAML: %w", err)
+	}
+	return convertSettings(f.Settings)
+}
+
+// WriteSettingsToFile writes settings to a YAML file (same format as preset settings).
+func WriteSettingsToFile(path string, settings []brave.Setting) error {
+	rows := make([]settingRow, len(settings))
+	for i, s := range settings {
+		rows[i] = settingRow{Key: s.Key, Value: s.Value, Type: string(s.Type)}
+	}
+	f := settingsFile{Settings: rows}
+	data, err := yaml.Marshal(&f)
+	if err != nil {
+		return fmt.Errorf("marshal YAML: %w", err)
+	}
+	return os.WriteFile(path, data, 0600)
 }

@@ -84,7 +84,11 @@ Comments (lines starting with `#`) are allowed and ignored.
 | DnsOverHttpsMode                     | string  | "off", "automatic", etc.  |
 | WebRtcIPHandling                     | string  | "disable_non_proxied_udp" |
 
-This is a subset; copy from existing preset files or `internal/config/settings.go` for more.
+**Proxy (optional):** `ProxyServerMode` (integer: 0=disabled, 1=auto, 2=manual, 3=system), `ProxyServer` (string), `ProxyPacUrl` (string). **Startup:** `RestoreOnStartup` (integer: 1=open NTP, 4=restore session, 5=open list of URLs), `HomepageLocation` (string URL). **Extensions:** `ExtensionInstallBlocklist` (list of extension IDs to block), `ExtensionInstallAllowlist` (list of extension IDs to allow; when set, only these can be installed).
+
+This is a subset; see [Chromium policy list](https://chromium.googlesource.com/chromium/src/+/HEAD/components/policy/resources/templates/policy_list.yaml) and `internal/config/settings.go` for more.
+
+**Brave version:** Policy names and behavior can differ between Brave versions. Presets are tested with Brave stable (recent releases). If a key has no effect, check [Brave release notes](https://brave.com/latest/) or the Chromium policy list for your Brave version.
 
 ## Troubleshooting
 

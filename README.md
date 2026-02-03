@@ -2,7 +2,7 @@
 
 # Cowardly
 
-**Cowardly** removes Brave’s bold features and returns it to a quiet, minimal, privacy-first browser on macOS. It is a small TUI (terminal UI) and CLI that applies Brave Browser policy preferences via macOS `defaults` so you can disable rewards, wallet, VPN, AI, telemetry, and other bloat without editing plists by hand.
+**Cowardly** removes Brave’s bold features and returns it to a quiet, minimal, privacy-first browser on macOS. It is a small TUI (terminal UI) and CLI that applies Brave Browser policy preferences via macOS managed preferences (or `defaults`) so you can disable rewards, wallet, VPN, AI, telemetry, and other bloat without editing plists by hand.
 
 Inspired by [SlimBrave](https://github.com/ltx0101/SlimBrave), [Debloat Brave Browser (macOS)](https://github.com/hi-one/hi-one/blob/main/Debloat-Brave-Browser-MacOS.md), [bebrave](https://github.com/ricardorodrigues-ca/bebrave), and [slimbrave-macos](https://github.com/vladandrei51/slimbrave-macos).
 
@@ -10,7 +10,7 @@ Inspired by [SlimBrave](https://github.com/ltx0101/SlimBrave), [Debloat Brave Br
 
 - **macOS** only (uses `defaults` and `~/Library/Preferences/com.brave.Browser.plist`)
 - **Go 1.25.6+** to build
-- **Brave Browser** installed in `/Applications/Brave Browser.app`
+- **Brave Browser** installed in `/Applications/Brave Browser.app` (tested with Brave stable; policy keys may vary by Brave version)
 
 ## Install
 
@@ -58,22 +58,42 @@ After applying or resetting, **restart Brave Browser** for changes to take effec
 
 ### CLI (non-interactive)
 
-- **Apply Quick Debloat preset and exit**
+- **Apply a preset** — Quick Debloat (default) or by ID (e.g. `max-privacy`, `balanced`):
 
   ```bash
   cowardly --apply
-  # or
   cowardly -a
+  cowardly --apply=max-privacy
   ```
 
-- **Reset all Brave policy settings and exit**
+- **Apply from a YAML file** (same format as preset `settings`):
+
+  ```bash
+  cowardly --apply-file=./my-settings.yaml
+  ```
+
+- **Dry run / diff** — See what would be applied, or which keys would change:
+
+  ```bash
+  cowardly --dry-run
+  cowardly --dry-run=balanced
+  cowardly --diff=quick
+  ```
+
+- **Export current settings** to a YAML file (for backup or to edit and re-apply):
+
+  ```bash
+  cowardly --export=./backup.yaml
+  ```
+
+- **Reset all Brave policy settings**
 
   ```bash
   cowardly --reset
   cowardly -r
   ```
 
-- **Print current settings and exit**
+- **Print current settings** (user and enforced/managed when present)
 
   ```bash
   cowardly --view
@@ -85,6 +105,8 @@ After applying or resetting, **restart Brave Browser** for changes to take effec
   cowardly --help
   cowardly -h
   ```
+
+Before apply or reset, the **user plist is backed up** to `~/Library/Application Support/cowardly/backups/`. If Brave is running, the CLI and TUI warn you to quit for a clean apply.
 
 ## Presets
 

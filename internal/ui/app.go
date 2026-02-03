@@ -13,7 +13,10 @@ import (
 
 type applyPresetMsg struct{ idx int }
 type applyCustomMsg struct{}
-type resetDoneMsg struct{ err error }
+type resetDoneMsg struct {
+	err        error
+	backupPath string
+}
 
 func (m model) Init() tea.Cmd {
 	return nil
@@ -132,8 +135,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch msg.String() {
 			case "y", "Y":
 				return m, func() tea.Msg {
+					backupPath, _ := brave.BackupUserPlist()
 					err := brave.Reset()
-					return resetDoneMsg{err: err}
+					return resetDoneMsg{err: err, backupPath: backupPath}
 				}
 			case "n", "N", "q", "esc":
 				m.state = stateMain
@@ -156,13 +160,22 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		p := plist[msg.idx]
+		if brave.BraveRunning() {
+			m.msg = "Brave is running — quit for a clean apply. "
+		} else {
+			m.msg = ""
+		}
+		if path, err := brave.BackupUserPlist(); err == nil {
+			m.msg += fmt.Sprintf("Backed up to %s. ", path)
+		}
 		managed, err := brave.ApplySettings(p.Settings)
 		if err != nil {
 			m.err = err.Error()
+			m.msg = ""
 		} else if managed {
-			m.msg = fmt.Sprintf("Applied preset: %s (enforced). Restart Brave for changes.", p.Name)
+			m.msg += fmt.Sprintf("Applied preset: %s (enforced). Restart Brave for changes.", p.Name)
 		} else {
-			m.msg = fmt.Sprintf("Applied preset: %s. Restart Brave. For enforced policies, run cowardly with sudo.", p.Name)
+			m.msg += fmt.Sprintf("Applied preset: %s. Restart Brave. For enforced policies, approve the macOS authentication dialog when you apply.", p.Name)
 		}
 		m.state = stateMain
 		return m, nil
@@ -179,13 +192,22 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.state = stateMain
 			return m, nil
 		}
+		if brave.BraveRunning() {
+			m.msg = "Brave is running — quit for a clean apply. "
+		} else {
+			m.msg = ""
+		}
+		if path, err := brave.BackupUserPlist(); err == nil {
+			m.msg += fmt.Sprintf("Backed up to %s. ", path)
+		}
 		managed, err := brave.ApplySettings(toApply)
 		if err != nil {
 			m.err = err.Error()
+			m.msg = ""
 		} else if managed {
-			m.msg = fmt.Sprintf("Applied %d setting(s) (enforced). Restart Brave for changes.", len(toApply))
+			m.msg += fmt.Sprintf("Applied %d setting(s) (enforced). Restart Brave for changes.", len(toApply))
 		} else {
-			m.msg = fmt.Sprintf("Applied %d setting(s). Restart Brave. For enforced policies, run cowardly with sudo.", len(toApply))
+			m.msg += fmt.Sprintf("Applied %d setting(s). Restart Brave. For enforced policies, approve the macOS authentication dialog when you apply.", len(toApply))
 		}
 		m.state = stateMain
 		return m, nil
@@ -195,6 +217,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.err = msg.err.Error()
 		} else {
 			m.msg = "All Brave policy settings reset. Restart Brave."
+			if msg.backupPath != "" {
+				m.msg = "Backed up to " + msg.backupPath + ". " + m.msg
+			}
+			m.msg += " If you cancelled the authentication dialog, the managed plist may still exist; run Reset again and approve to remove it."
 		}
 		m.state = stateMain
 		return m, nil
@@ -262,15 +288,17 @@ func (m model) customView() string {
 }
 
 func (m model) viewSettingsView() string {
-	// Use title without MarginBottom so the first list line isn't laid out in a new block
 	headerStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("62"))
 	var b strings.Builder
 	b.WriteString(headerStyle.Render("Current Brave settings"))
-	b.WriteString(dimStyle.Render("\n(only known keys shown)\n\n"))
+	b.WriteString(dimStyle.Render("\n(managed overrides user; enforced = what Brave uses)\n\n"))
 	for _, key := range m.viewKeys {
-		val, ok := brave.Read(key)
-		if ok {
-			b.WriteString("  " + checkStyle.Render("✓ ") + key + " = " + val + "\n")
+		managedVal, managedOK := brave.ReadManaged(key)
+		userVal, userOK := brave.Read(key)
+		if managedOK {
+			b.WriteString("  " + checkStyle.Render("✓ ") + key + " = " + managedVal + " (enforced)\n")
+		} else if userOK {
+			b.WriteString("  " + checkStyle.Render("✓ ") + key + " = " + userVal + " (user)\n")
 		} else {
 			b.WriteString("  " + dimStyle.Render("○ ") + key + " = (not set)\n")
 		}

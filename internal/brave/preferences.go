@@ -2,12 +2,20 @@
 package brave
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
+)
+
+// Timeouts for subprocess calls to avoid hanging.
+const (
+	defaultsTimeout  = 30 * time.Second
+	osascriptTimeout = 90 * time.Second // User may need time for auth dialog.
 )
 
 // plistXMLHeader matches the format used by hi-one so Brave reads the managed plist correctly.
@@ -130,8 +138,13 @@ func writeToPath(path string, s Setting) error {
 	default:
 		return fmt.Errorf("unsupported type %q", s.Type)
 	}
-	cmd := exec.Command("defaults", args...)
+	ctx, cancel := context.WithTimeout(context.Background(), defaultsTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "defaults", args...)
 	if out, err := cmd.CombinedOutput(); err != nil {
+		if ctx.Err() != nil {
+			return fmt.Errorf("defaults write: %w", ctx.Err())
+		}
 		return fmt.Errorf("defaults write: %w: %s", err, strings.TrimSpace(string(out)))
 	}
 	return nil
@@ -183,14 +196,20 @@ func WriteAllToManaged(settings []Setting) error {
 		return fmt.Errorf("write temp plist: %w", err)
 	}
 
-	// Use AppleScript "with administrator privileges" so a GUI dialog appears (password or Touch ID)
-	// instead of terminal sudo, which doesn't work properly when run from the TUI.
+	// Only the temp file path (src) is passed to the shell; preset data is in the plist content
+	// and never interpolated into the shell command, so there is no shell injection from presets.
+	// Use AppleScript "with administrator privileges" so a GUI dialog appears (password or Touch ID).
 	// chmod 644 so the plist is readable by Brave (per hi-one / managed preferences practice).
 	shellCmd := fmt.Sprintf("mkdir -p \"/Library/Managed Preferences\" && cp %s \"/Library/Managed Preferences/com.brave.Browser.plist\" && chown root:wheel \"/Library/Managed Preferences/com.brave.Browser.plist\" && chmod 644 \"/Library/Managed Preferences/com.brave.Browser.plist\"",
 		shellSingleQuoted(src))
 	script := `do shell script "` + escapeForAppleScript(shellCmd) + `" with administrator privileges`
-	cmd := exec.Command("osascript", "-e", script)
+	ctx, cancel := context.WithTimeout(context.Background(), osascriptTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "osascript", "-e", script)
 	if out, err := cmd.CombinedOutput(); err != nil {
+		if ctx.Err() != nil {
+			return fmt.Errorf("copy to managed preferences: %w", ctx.Err())
+		}
 		return fmt.Errorf("copy to managed preferences: %w: %s", err, strings.TrimSpace(string(out)))
 	}
 	return nil
@@ -207,14 +226,41 @@ func escapeForAppleScript(s string) string {
 	return strings.ReplaceAll(s, `"`, `\"`)
 }
 
-// Read returns the current value for key, or ("", false) if unset or error.
+// Read returns the current value for key from user preferences, or ("", false) if unset or error.
 func Read(key string) (string, bool) {
 	if !IsMacOS() {
 		return "", false
 	}
-	cmd := exec.Command("defaults", "read", Domain, key)
+	ctx, cancel := context.WithTimeout(context.Background(), defaultsTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "defaults", "read", Domain, key)
 	out, err := cmd.CombinedOutput()
-	if err != nil {
+	if err != nil || ctx.Err() != nil {
+		return "", false
+	}
+	return strings.TrimSpace(string(out)), true
+}
+
+// ManagedPlistExists returns true if the managed preferences plist is present.
+func ManagedPlistExists() bool {
+	if !IsMacOS() {
+		return false
+	}
+	_, err := os.Stat(ManagedPreferencesPath + ".plist")
+	return err == nil
+}
+
+// ReadManaged returns the value for key from the managed plist, or ("", false) if unset or error.
+// Use this to show what Brave actually enforces (managed overrides user).
+func ReadManaged(key string) (string, bool) {
+	if !IsMacOS() || !ManagedPlistExists() {
+		return "", false
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), defaultsTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "defaults", "read", ManagedPreferencesPath, key)
+	out, err := cmd.CombinedOutput()
+	if err != nil || ctx.Err() != nil {
 		return "", false
 	}
 	return strings.TrimSpace(string(out)), true
@@ -225,7 +271,9 @@ func Delete(key string) error {
 	if !IsMacOS() {
 		return fmt.Errorf("cowardly only supports macOS")
 	}
-	cmd := exec.Command("defaults", "delete", Domain, key)
+	ctx, cancel := context.WithTimeout(context.Background(), defaultsTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "defaults", "delete", Domain, key)
 	_ = cmd.Run() // ignore error if key missing
 	return nil
 }
@@ -235,7 +283,9 @@ func Reset() error {
 	if !IsMacOS() {
 		return fmt.Errorf("cowardly only supports macOS")
 	}
-	cmd := exec.Command("defaults", "delete", Domain)
+	ctx, cancel := context.WithTimeout(context.Background(), defaultsTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "defaults", "delete", Domain)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		if !strings.Contains(string(out), "domain does not exist") {
 			return fmt.Errorf("defaults delete: %w: %s", err, strings.TrimSpace(string(out)))
@@ -245,17 +295,197 @@ func Reset() error {
 	if _, err := os.Stat(ManagedPreferencesPath + ".plist"); err == nil {
 		dst := ManagedPreferencesPath + ".plist"
 		script := `do shell script "rm -f ` + escapeForAppleScript(shellSingleQuoted(dst)) + `" with administrator privileges`
-		cmd := exec.Command("osascript", "-e", script)
+		ctx2, cancel2 := context.WithTimeout(context.Background(), osascriptTimeout)
+		defer cancel2()
+		cmd := exec.CommandContext(ctx2, "osascript", "-e", script)
 		_ = cmd.Run() // ignore error if user cancels
 	}
 	return nil
 }
 
-// BraveInstalled checks if Brave Browser is installed in /Applications.
+// BraveAppPath is the default path to the Brave Browser application.
+const BraveAppPath = "/Applications/Brave Browser.app"
+
+// BraveInstalled checks if Brave Browser is installed at BraveAppPath.
 func BraveInstalled() bool {
 	if !IsMacOS() {
 		return false
 	}
-	info, err := os.Stat("/Applications/Brave Browser.app")
+	info, err := os.Stat(BraveAppPath)
 	return err == nil && info.IsDir()
+}
+
+// BraveVersion returns the Brave Browser version string (e.g. "1.65.120") from the app bundle, or "" if unreadable.
+// Useful for diagnostics; policy behavior may vary by Brave version.
+func BraveVersion() string {
+	if !IsMacOS() {
+		return ""
+	}
+	infoPlist := filepath.Join(BraveAppPath, "Contents", "Info.plist")
+	if _, err := os.Stat(infoPlist); err != nil {
+		return ""
+	}
+	// defaults read expects the path without .plist extension
+	domain := filepath.Join(BraveAppPath, "Contents", "Info")
+	ctx, cancel := context.WithTimeout(context.Background(), defaultsTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "defaults", "read", domain, "CFBundleShortVersionString")
+	out, err := cmd.CombinedOutput()
+	if err != nil || ctx.Err() != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
+}
+
+// BraveRunning returns true if the Brave Browser process is running.
+// Quitting Brave before apply can ensure a clean state; this is used to warn the user.
+func BraveRunning() bool {
+	if !IsMacOS() {
+		return false
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), defaultsTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "pgrep", "-x", "Brave Browser")
+	err := cmd.Run()
+	return err == nil
+}
+
+// UserPreferencesPath returns the path to the user's Brave plist (~/Library/Preferences/com.brave.Browser.plist).
+func UserPreferencesPath() (string, error) {
+	if !IsMacOS() {
+		return "", fmt.Errorf("cowardly only supports macOS")
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("home dir: %w", err)
+	}
+	return filepath.Join(home, "Library", "Preferences", Domain+".plist"), nil
+}
+
+// BackupUserPlist copies the user preferences plist to ~/Library/Application Support/cowardly/backups/<timestamp>-user.plist.
+// Creates the backup directory if needed. Returns the backup path, or error if the source plist does not exist or copy fails.
+func BackupUserPlist() (string, error) {
+	src, err := UserPreferencesPath()
+	if err != nil {
+		return "", err
+	}
+	if _, err := os.Stat(src); err != nil {
+		return "", fmt.Errorf("user plist not found: %w", err)
+	}
+	home, _ := os.UserHomeDir()
+	backupDir := filepath.Join(home, "Library", "Application Support", "cowardly", "backups")
+	if err := os.MkdirAll(backupDir, 0755); err != nil {
+		return "", fmt.Errorf("create backup dir: %w", err)
+	}
+	ts := time.Now().Format("2006-01-02T15-04-05")
+	dst := filepath.Join(backupDir, ts+"-user.plist")
+	data, err := os.ReadFile(src)
+	if err != nil {
+		return "", fmt.Errorf("read user plist: %w", err)
+	}
+	if err := os.WriteFile(dst, data, 0600); err != nil {
+		return "", fmt.Errorf("write backup: %w", err)
+	}
+	return dst, nil
+}
+
+// DryRun returns a human-readable description of what ApplySettings would write (without writing).
+func DryRun(settings []Setting) string {
+	var b strings.Builder
+	b.WriteString(fmt.Sprintf("Would apply %d setting(s). Target: managed preferences (enforced) if you approve the macOS dialog; otherwise user preferences.\n\n", len(settings)))
+	for _, s := range settings {
+		var val string
+		switch s.Type {
+		case TypeBool:
+			if v, ok := s.Value.(bool); ok && v {
+				val = "true"
+			} else {
+				val = "false"
+			}
+		case TypeInteger:
+			val = fmt.Sprintf("%v", s.Value)
+		case TypeString:
+			val = fmt.Sprintf("%q", s.Value)
+		default:
+			val = fmt.Sprintf("%v", s.Value)
+		}
+		b.WriteString(fmt.Sprintf("  %s = %s\n", s.Key, val))
+	}
+	return strings.TrimSpace(b.String())
+}
+
+// settingValueStr returns the string form of a setting's value for comparison.
+func settingValueStr(s Setting) string {
+	switch s.Type {
+	case TypeBool:
+		if v, ok := s.Value.(bool); ok && v {
+			return "1"
+		}
+		return "0"
+	case TypeInteger:
+		return fmt.Sprintf("%v", s.Value)
+	case TypeString:
+		return fmt.Sprintf("%v", s.Value)
+	default:
+		return fmt.Sprintf("%v", s.Value)
+	}
+}
+
+// Diff returns a human-readable list of changes that would be made (current value -> new value).
+// Only includes keys where the effective current value differs from the new value.
+func Diff(settings []Setting) string {
+	var b strings.Builder
+	for _, s := range settings {
+		current, _ := ReadManaged(s.Key)
+		if current == "" {
+			current, _ = Read(s.Key)
+		}
+		newStr := settingValueStr(s)
+		if current == newStr {
+			continue
+		}
+		if current == "" {
+			current = "(not set)"
+		}
+		b.WriteString(fmt.Sprintf("  %s: %s -> %s\n", s.Key, current, newStr))
+	}
+	return strings.TrimSpace(b.String())
+}
+
+// ReadCurrent returns the effective current value for key (managed overrides user) and infers a type.
+// Used for export. The value is normalized to the format we use in Setting (bool, int, or string).
+func ReadCurrent(key string) (Setting, bool) {
+	raw, ok := ReadManaged(key)
+	if !ok {
+		raw, ok = Read(key)
+	}
+	if !ok {
+		return Setting{}, false
+	}
+	raw = strings.TrimSpace(raw)
+	s := Setting{Key: key}
+	switch strings.ToLower(raw) {
+	case "1", "true", "yes":
+		s.Type = TypeBool
+		s.Value = true
+		return s, true
+	case "0", "false", "no":
+		s.Type = TypeBool
+		s.Value = false
+		return s, true
+	}
+	if n, err := parseInt(raw); err == nil {
+		s.Type = TypeInteger
+		s.Value = n
+		return s, true
+	}
+	s.Type = TypeString
+	s.Value = raw
+	return s, true
+}
+
+func parseInt(s string) (int, error) {
+	var n int
+	_, err := fmt.Sscanf(s, "%d", &n)
+	return n, err
 }
