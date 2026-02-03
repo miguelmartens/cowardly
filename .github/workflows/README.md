@@ -22,6 +22,21 @@ Scans the repository for secrets and sensitive information that may have been ac
 
 **Tip:** Never commit real secrets; use placeholders in committed files and store actual secrets outside the repo.
 
+### Build
+
+Builds the Go binary and runs tests. Must succeed before merging into `main`.
+
+**Triggers:**
+- Push to `main`
+- Pull requests targeting `main`
+
+**What it does:**
+- Sets up Go using the version from `go.mod`
+- Runs `go build -o bin/cowardly ./cmd/cowardly`
+- Runs `go test ./...`
+
+**Local:** Run `make build` to build, `make test` to test, or `make run` to build and run the TUI.
+
 ### Prettier
 
 Checks that Markdown, JSON, YAML, and other supported files are formatted according to [Prettier](https://prettier.io/).
