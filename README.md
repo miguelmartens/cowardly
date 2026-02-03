@@ -34,7 +34,7 @@ To build and run from the repo (e.g. for development):
 make run
 ```
 
-For repository setup and Renovate automation, see **[docs/SETUP.md](docs/SETUP.md)**.
+For repository setup and Renovate automation, see **[docs/SETUP.md](docs/SETUP.md)**. For how we tag and publish releases, see **[docs/RELEASING.md](docs/RELEASING.md)**.
 
 ## Usage
 

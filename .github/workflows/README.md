@@ -54,3 +54,22 @@ Validates YAML syntax and style for YAML files in the repository using [yamllint
 - Pull requests targeting `main`
 
 **Local:** Run `make lint-yaml` to match CI.
+
+### Release
+
+Creates a GitHub Release with built binaries when you push a version tag.
+
+**Triggers:**
+- Push of a tag matching `v*` (e.g. `v1.0.0`, `v0.2.0`)
+
+**What it does:**
+- Builds the Go binary for **darwin/amd64** and **darwin/arm64** (macOS Intel and Apple Silicon)
+- Creates a GitHub Release from the tag and attaches both binaries
+- Generates release notes from the tag
+
+**How to release:**
+1. Bump version (e.g. in docs or go.mod if you track it there).
+2. Commit, then create and push a tag: `git tag v1.0.0 && git push origin v1.0.0`
+3. The workflow runs and publishes the release; download the binaries from the repository’s **Releases** page.
+
+See **[docs/RELEASING.md](../../docs/RELEASING.md)** for full tagging and releasing instructions.
