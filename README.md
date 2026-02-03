@@ -150,7 +150,7 @@ Use **Space** to toggle, **Enter** to apply, **a** to select all, **n** to selec
 
 ## Project layout
 
-The repo follows the [Standard Go Project Layout](https://github.com/golang-standards/project-layout). See **[docs/PROJECT-LAYOUT.md](docs/PROJECT-LAYOUT.md)** for the directory overview, **[docs/PLATFORMS.md](docs/PLATFORMS.md)** for current and possible future platform support (macOS / Linux / Windows), and **[docs/POLICY-ENFORCEMENT.md](docs/POLICY-ENFORCEMENT.md)** for how policy enforcement works on macOS (managed vs user preferences, raw XML plist, AppleScript auth).
+The repo follows the [Standard Go Project Layout](https://github.com/golang-standards/project-layout). See **[docs/PROJECT-LAYOUT.md](docs/PROJECT-LAYOUT.md)** for the directory overview, **[docs/PLATFORMS.md](docs/PLATFORMS.md)** for current and possible future platform support (macOS / Linux / Windows), and **[docs/POLICY-ENFORCEMENT.md](docs/POLICY-ENFORCEMENT.md)** for how policy enforcement works on macOS (managed vs user preferences, raw XML plist, AppleScript auth). A summary of implemented features is in **[docs/FEATURES.md](docs/FEATURES.md)**; possible future improvements are in **[docs/FUTURE.md](docs/FUTURE.md)**.
 
 ## Development
 
