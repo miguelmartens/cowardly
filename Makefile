@@ -39,6 +39,7 @@ build:
 run: build
 	$(OUT)
 
+# Run all package tests (*_test.go alongside code; no separate /test dir per Go convention)
 test:
 	go test ./...
 
