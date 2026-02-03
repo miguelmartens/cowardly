@@ -5,6 +5,7 @@ Anyone can add a new preset by adding a single **YAML** file in **configs/preset
 ## Steps
 
 1. **Add a new file** in **configs/presets/**.
+
    - Use a descriptive filename. Order in the TUI is alphabetical by filename, so use a numeric prefix if you care (e.g. `07-my-preset.yaml`).
    - Only `.yaml` files in this directory are loaded.
 

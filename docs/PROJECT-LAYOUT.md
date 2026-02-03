@@ -15,7 +15,7 @@ This project follows the [Standard Go Project Layout](https://github.com/golang-
 | **configs/**         | Configuration templates. **configs/presets/** holds preset YAML files (embedded at build). See [configs/README.md](../configs/README.md).                                                    |
 | **scripts/**         | Build and tool scripts; invoked by the root Makefile.                                                                                                                                        |
 | **docs/**            | Design and user documentation (this file).                                                                                                                                                   |
-| **assets/**          | Images and logos (e.g. `cowardly-logo.png`).                                                                                                                                                  |
+| **assets/**          | Images and logos (e.g. `cowardly-logo.png`).                                                                                                                                                 |
 | **bin/**             | Build output; executable from `make build`. Gitignored.                                                                                                                                      |
 
 ## Not used

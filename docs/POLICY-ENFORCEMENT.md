@@ -6,9 +6,9 @@ This document describes why Cowardly writes to **managed preferences** when poss
 
 Brave (like Chromium) supports policy keys that disable features such as Rewards, Wallet, VPN, and telemetry. On macOS, however, **where** those keys are stored determines whether Brave actually enforces them:
 
-| Location | Path | Enforced? |
-|----------|------|-----------|
-| **User preferences** | `~/Library/Preferences/com.brave.Browser.plist` | **No** — Brave may still show Rewards, Wallet, etc. |
+| Location                | Path                                                   | Enforced?                                                                  |
+| ----------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------- |
+| **User preferences**    | `~/Library/Preferences/com.brave.Browser.plist`        | **No** — Brave may still show Rewards, Wallet, etc.                        |
 | **Managed preferences** | `/Library/Managed Preferences/com.brave.Browser.plist` | **Yes** — Brave treats these as mandatory and hides/ disables the features |
 
 If you only run `defaults write com.brave.Browser BraveRewardsDisabled -bool true`, the key is written to the user plist. After restarting Brave, the UI can still show Rewards and Wallet. To get **enforced** behavior (features hidden/disabled), the same keys must be present in the **managed** plist under `/Library/Managed Preferences/`. That path is the standard macOS location for mandatory (MDM-style) policies.
@@ -58,13 +58,13 @@ chmod 644 "/Library/Managed Preferences/com.brave.Browser.plist"
 
 ## Summary
 
-| Aspect | Choice | Reason |
-|--------|--------|--------|
-| **Where** | `/Library/Managed Preferences/com.brave.Browser.plist` when possible | Required for Brave to enforce policies (hide Rewards/Wallet, etc.). |
-| **Format** | Raw XML plist | Predictable, matches Brave/hi-one expectations. |
-| **Admin** | AppleScript “with administrator privileges” | GUI auth dialog; works from TUI and CLI. |
-| **Permissions** | `chown root:wheel`, `chmod 644` | Standard for managed prefs; readable by Brave. |
-| **Fallback** | User preferences via `defaults write` | Works without admin; user is informed enforcement may not apply. |
+| Aspect          | Choice                                                               | Reason                                                              |
+| --------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| **Where**       | `/Library/Managed Preferences/com.brave.Browser.plist` when possible | Required for Brave to enforce policies (hide Rewards/Wallet, etc.). |
+| **Format**      | Raw XML plist                                                        | Predictable, matches Brave/hi-one expectations.                     |
+| **Admin**       | AppleScript “with administrator privileges”                          | GUI auth dialog; works from TUI and CLI.                            |
+| **Permissions** | `chown root:wheel`, `chmod 644`                                      | Standard for managed prefs; readable by Brave.                      |
+| **Fallback**    | User preferences via `defaults write`                                | Works without admin; user is informed enforcement may not apply.    |
 
 ## References
 

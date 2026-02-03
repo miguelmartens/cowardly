@@ -114,9 +114,18 @@ The repo follows the [Standard Go Project Layout](https://github.com/golang-stan
 
 ## Development
 
-- Format: `make fmt` or `gofmt -s -w .`
-- Lint: `make lint` (requires [golangci-lint](https://golangci-lint.run) v2). For all config options see [.golangci.reference.yml](https://github.com/golangci/golangci-lint/blob/HEAD/.golangci.reference.yml).
-- Tests: `make test`
+- **Go:** `make fmt` (format code, tidy modules), `make test`, `make lint` ([golangci-lint](https://golangci-lint.run) v2). See [.golangci.reference.yml](https://github.com/golangci/golangci-lint/blob/HEAD/.golangci.reference.yml) for lint config.
+- **Markdown/YAML/JSON:** `make format-check` (CI check) or `make format` / `make prettier` to fix. Prettier is pinned to 3.3.2.
+- **YAML:** `make lint-yaml` (yamllint; config in `.yamllint.yml`).
+
+## Contributing
+
+1. Fork the repo and clone it. Ensure you have **Go 1.25.6+** and (optional) **golangci-lint**, **prettier**, and **yamllint** for local checks.
+2. Create a branch for your change. Make your edits; add presets in [configs/presets/](configs/presets/) if needed (see [docs/ADDING-PRESETS.md](docs/ADDING-PRESETS.md)).
+3. Before opening a PR, run: `make test`, `make lint`, `make format-check`, and `make lint-yaml`. Fix any failures so CI passes.
+4. Open a pull request with a short description of the change. For bugs or features, opening an issue first is welcome.
+
+CI runs **gitleaks**, **prettier** (format check), and **yaml-lint** on push and pull requests; see [.github/workflows/README.md](.github/workflows/README.md).
 
 ## Disclaimer
 
