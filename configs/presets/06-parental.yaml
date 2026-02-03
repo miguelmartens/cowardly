@@ -1,0 +1,60 @@
+# Strict Parental Controls: no incognito, SafeSearch, no sign-in, no dev tools.
+id: parental
+name: Strict Parental Controls
+description: Disable incognito, force SafeSearch, disable sign-in and developer tools.
+settings:
+  - key: IncognitoModeAvailability
+    value: 1
+    type: integer
+  - key: ForceGoogleSafeSearch
+    value: true
+    type: bool
+  - key: BrowserSignin
+    value: 0
+    type: integer
+  - key: DeveloperToolsDisabled
+    value: true
+    type: bool
+  - key: BraveRewardsDisabled
+    value: true
+    type: bool
+  - key: BraveWalletDisabled
+    value: true
+    type: bool
+  - key: BraveVPNDisabled
+    value: true
+    type: bool
+  - key: TorDisabled
+    value: true
+    type: bool
+  # Performance / bloat
+  - key: BackgroundModeEnabled
+    value: false
+    type: bool
+  - key: MediaRecommendationsEnabled
+    value: false
+    type: bool
+  - key: ShoppingListEnabled
+    value: false
+    type: bool
+  - key: AlwaysOpenPdfExternally
+    value: true
+    type: bool
+  - key: TranslateEnabled
+    value: false
+    type: bool
+  - key: SpellcheckEnabled
+    value: false
+    type: bool
+  - key: PromotionsEnabled
+    value: false
+    type: bool
+  - key: SearchSuggestEnabled
+    value: false
+    type: bool
+  - key: PrintingEnabled
+    value: false
+    type: bool
+  - key: DefaultBrowserSettingEnabled
+    value: false
+    type: bool

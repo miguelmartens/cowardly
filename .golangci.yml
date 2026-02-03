@@ -1,0 +1,28 @@
+# golangci-lint v2
+# Reference: https://github.com/golangci/golangci-lint/blob/master/.golangci.reference.yml
+# Docs: https://golangci-lint.run/docs/configuration/
+
+version: "2"
+
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+  go: "1.21"
+
+linters:
+  default: none
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - errcheck
+
+formatters:
+  enable:
+    - gofmt

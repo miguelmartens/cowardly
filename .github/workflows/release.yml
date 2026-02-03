@@ -1,0 +1,38 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build
+        run: |
+          export CGO_ENABLED=0
+          for pair in darwin/amd64 darwin/arm64; do
+            GOOS="${pair%/*}" GOARCH="${pair#*/}" go build -o "cowardly-${pair%/*}-${pair#*/}" ./cmd/cowardly
+          done
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            cowardly-darwin-amd64
+            cowardly-darwin-arm64
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
