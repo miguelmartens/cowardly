@@ -11,6 +11,7 @@ import (
 	"github.com/cowardly/cowardly/internal/brave"
 	"github.com/cowardly/cowardly/internal/config"
 	"github.com/cowardly/cowardly/internal/presets"
+	"github.com/mattn/go-runewidth"
 )
 
 type applyPresetMsg struct{ idx int }
@@ -405,15 +406,19 @@ func (m model) View() string {
 func (m model) customView() string {
 	var b strings.Builder
 	b.WriteString(titleStyle.Render("Custom — Toggle settings (Space), Apply (Enter)"))
-	b.WriteString(dimStyle.Render("\n[a] select all  [n] select none  [esc] back\n\n"))
+	b.WriteString("\n")
+	b.WriteString(dimStyle.Render("[a] select all  [n] select none  [esc] back"))
+	b.WriteString("\n\n") // raw newlines so the next line is not inside any style
 
+	// Inline(true) prevents block-level reflow so the category stays at column 0
+	catStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#ff631c")).Inline(true)
 	byCat := config.CustomSettingsByCategory()
 	for _, cat := range config.CategoryOrder {
 		idxs, ok := byCat[cat]
 		if !ok || len(idxs) == 0 {
 			continue
 		}
-		b.WriteString(lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#ff631c")).Render(cat))
+		b.WriteString(catStyle.Render(cat))
 		b.WriteString("\n")
 		for _, i := range idxs {
 			cs := m.customSettings[i]
@@ -435,21 +440,60 @@ func (m model) customView() string {
 }
 
 func (m model) viewSettingsView() string {
-	headerStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#ff631c"))
+	headerStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#ff631c")).Inline(true)
 	var b strings.Builder
 	b.WriteString(headerStyle.Render("Current Brave settings"))
-	b.WriteString(dimStyle.Render("\n(managed overrides user; enforced = what Brave uses)\n\n"))
+	b.WriteString("\n")
+	b.WriteString(dimStyle.Render("(managed overrides user; enforced = what Brave uses)"))
+	b.WriteString("\n\n") // raw newlines so the list is not inside any style
+	// Inline styles so each line stays at column 0 (no block reflow)
+	checkIconStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#4caf50")).Inline(true)
+	unsetIconStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Inline(true)
+	maxKeyWidth := 0
+	for _, key := range m.viewKeys {
+		if w := runewidth.StringWidth(key); w > maxKeyWidth {
+			maxKeyWidth = w
+		}
+	}
+	prefixRaw := "  ✓ " // unstyled for width calculation
 	for _, key := range m.viewKeys {
 		managedVal, managedOK := brave.ReadManaged(key)
 		userVal, userOK := brave.Read(key)
+		paddedKey := key + strings.Repeat(" ", maxKeyWidth-runewidth.StringWidth(key))
+		var valuePart, suffix string
+		var line string
 		if managedOK {
-			b.WriteString("  " + checkStyle.Render("✓ ") + key + " = " + managedVal + " (enforced)\n")
+			valuePart = managedVal
+			suffix = " (enforced)"
+			line = "  " + checkIconStyle.Render("✓ ") + paddedKey + " = " + managedVal + suffix + "\n"
 		} else if userOK {
-			b.WriteString("  " + checkStyle.Render("✓ ") + key + " = " + userVal + " (user)\n")
+			valuePart = userVal
+			suffix = " (user)"
+			line = "  " + checkIconStyle.Render("✓ ") + paddedKey + " = " + userVal + suffix + "\n"
 		} else {
-			b.WriteString("  " + dimStyle.Render("○ ") + key + " = (not set)\n")
+			valuePart = "(not set)"
+			suffix = ""
+			line = "  " + unsetIconStyle.Render("○ ") + paddedKey + " = (not set)\n"
+		}
+		// When line would wrap, break so "= value (enforced)" aligns in a column
+		lineWidth := runewidth.StringWidth(prefixRaw+paddedKey) + runewidth.StringWidth(" = "+valuePart+suffix)
+		if m.width > 0 && lineWidth > m.width {
+			indent := runewidth.StringWidth(prefixRaw + paddedKey)
+			if managedOK {
+				b.WriteString("  " + checkIconStyle.Render("✓ ") + paddedKey + "\n")
+				b.WriteString(strings.Repeat(" ", indent) + "= " + managedVal + " (enforced)\n")
+			} else if userOK {
+				b.WriteString("  " + checkIconStyle.Render("✓ ") + paddedKey + "\n")
+				b.WriteString(strings.Repeat(" ", indent) + "= " + userVal + " (user)\n")
+			} else {
+				b.WriteString("  " + unsetIconStyle.Render("○ ") + paddedKey + "\n")
+				b.WriteString(strings.Repeat(" ", indent) + "= (not set)\n")
+			}
+		} else {
+			b.WriteString(line)
 		}
 	}
-	b.WriteString(dimStyle.Render("\nq/esc back"))
+	b.WriteString("\n")
+	b.WriteString(dimStyle.Render("q/esc back"))
 	return b.String()
 }
