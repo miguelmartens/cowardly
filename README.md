@@ -24,7 +24,7 @@ cd cowardly_vX.Y.Z_darwin_arm64
 chmod +x cowardly && ./cowardly
 ```
 
-See **[docs/INSTALL.md](docs/INSTALL.md)** for full install instructions (where to download, PATH install, upgrading).
+See **[docs/INSTALL.md](docs/INSTALL.md)** for full install instructions (where to download, PATH install, **if macOS blocks the app**, upgrading).
 
 **From source:**
 
