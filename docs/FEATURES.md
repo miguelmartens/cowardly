@@ -44,7 +44,7 @@ See [POLICY-ENFORCEMENT.md](POLICY-ENFORCEMENT.md) for the rationale and impleme
 | Diff               | `--diff=<id>` — key-by-key difference (current vs preset)              |
 | Export             | `--export=<path>` — current settings to YAML                           |
 | Reset              | `--reset`, `-r`                                                        |
-| View settings      | `--view`, `-v` — current settings and Brave version when available     |
+| Current settings   | `--current`, `-c` — print current Brave policy settings                   |
 | Backups            | `--backups`, `-b` (list), `--restore=<path>`, `--delete-backup=<path>` |
 | Help               | `--help`, `-h`                                                         |
 
@@ -70,7 +70,7 @@ Apply and reset warn if Brave is running and block reset until Brave is quit.
 
 ## Brave detection
 
-- **Brave version** — Read from app bundle via `defaults read` (e.g. for `--view`).
+- **Brave version** — Read from app bundle via `defaults read` (shown by `--version` / `-v`).
 - **Brave running** — Check if Brave process is running; used to warn before apply and to block reset until Brave is quit.
 
 ## Project and tooling
