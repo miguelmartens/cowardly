@@ -7,6 +7,17 @@ This guide covers installing Cowardly from a **release archive** (no Go or repo 
 - **macOS** (Intel or Apple Silicon)
 - **Brave Browser** installed at `/Applications/Brave Browser.app`
 
+## Install with Homebrew
+
+If you use [Homebrew](https://brew.sh/), you can install from the tap (builds from source; Go is installed automatically as a dependency):
+
+```bash
+brew tap miguelmartens/cowardly
+brew install cowardly
+```
+
+Then run `cowardly`. Tap: [github.com/miguelmartens/homebrew-cowardly](https://github.com/miguelmartens/homebrew-cowardly).
+
 ## Where to download
 
 1. Open the **latest release** on GitHub:
