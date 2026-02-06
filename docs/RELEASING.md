@@ -61,17 +61,18 @@ git push origin v1.0.0
   - `cowardly_v1.0.0_darwin_x86_64.tar.gz` (Intel Mac)
   - `cowardly_v1.0.0_darwin_arm64.tar.gz` (Apple Silicon)
 
-Asset names follow the format **`cowardly_v{VERSION}_{OS}_{ARCH}.tar.gz`** (e.g. for future Linux: `cowardly_v1.0.0_linux_x86_64.tar.gz`). Each archive contains the `cowardly` executable plus CHANGELOG.md, LICENSE, and README.md.
+Asset names follow the format **`cowardly_v{VERSION}_{OS}_{ARCH}.tar.gz`** (e.g. for future Linux: `cowardly_v1.0.0_linux_x86_64.tar.gz`). Each archive contains a **single top-level directory** (e.g. `cowardly_v1.0.0_darwin_arm64/`) with the `cowardly` executable, CHANGELOG.md, LICENSE, and README.md inside it.
 
 Users can download and run, e.g. for Apple Silicon:
 
 ```bash
 tar xzf cowardly_v1.0.0_darwin_arm64.tar.gz
+cd cowardly_v1.0.0_darwin_arm64
 chmod +x cowardly
 ./cowardly
 ```
 
-(Or move `cowardly` to a directory in `PATH`.)
+(Or move the `cowardly` binary to a directory in `PATH`.)
 
 ## Releasing from the GitHub UI
 

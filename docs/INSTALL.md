@@ -18,27 +18,27 @@ This guide covers installing Cowardly from a **release archive** (no Go or repo 
    - **Apple Silicon (M1/M2/M3, etc.)** — `cowardly_vX.Y.Z_darwin_arm64.tar.gz`
    - **Intel Mac** — `cowardly_vX.Y.Z_darwin_x86_64.tar.gz`
 
-   Replace `X.Y.Z` with the actual version number. Each archive contains the `cowardly` executable plus CHANGELOG.md, LICENSE, and README.md.
+   Replace `X.Y.Z` with the actual version number. Each archive contains a **directory** (e.g. `cowardly_vX.Y.Z_darwin_arm64/`) with the `cowardly` executable, CHANGELOG.md, LICENSE, and README.md inside it.
 
 ## Extract and run
 
 From the directory where you downloaded the file (e.g. `~/Downloads`):
 
 ```bash
-# Extract (creates cowardly, CHANGELOG.md, LICENSE, README.md in the current directory)
+# Extract (creates a directory, e.g. cowardly_vX.Y.Z_darwin_arm64/, with files inside)
 tar xzf cowardly_vX.Y.Z_darwin_arm64.tar.gz
 
-# Make the binary executable (required if it wasn’t already)
+# Enter the directory, make the binary executable, and run
+cd cowardly_vX.Y.Z_darwin_arm64
 chmod +x cowardly
-
-# Run
 ./cowardly
 ```
 
-For Intel Macs, use the `darwin_x86_64` archive:
+For Intel Macs, use the `darwin_x86_64` archive and the matching directory name:
 
 ```bash
 tar xzf cowardly_vX.Y.Z_darwin_x86_64.tar.gz
+cd cowardly_vX.Y.Z_darwin_x86_64
 chmod +x cowardly
 ./cowardly
 ```
@@ -56,8 +56,8 @@ To run `cowardly` from anywhere without `./`:
 
    ```bash
    tar xzf cowardly_vX.Y.Z_darwin_arm64.tar.gz
-   chmod +x cowardly
-   sudo mv cowardly /usr/local/bin/
+   chmod +x cowardly_vX.Y.Z_darwin_arm64/cowardly
+   sudo mv cowardly_vX.Y.Z_darwin_arm64/cowardly /usr/local/bin/
    cowardly
    ```
 
@@ -66,8 +66,8 @@ To run `cowardly` from anywhere without `./`:
    ```bash
    mkdir -p ~/bin
    tar xzf cowardly_vX.Y.Z_darwin_arm64.tar.gz
-   chmod +x cowardly
-   mv cowardly ~/bin/
+   chmod +x cowardly_vX.Y.Z_darwin_arm64/cowardly
+   mv cowardly_vX.Y.Z_darwin_arm64/cowardly ~/bin/
    # Add to PATH if not already (e.g. in ~/.zshrc):  export PATH="$HOME/bin:$PATH"
    cowardly
    ```
@@ -90,7 +90,7 @@ Restart **Brave Browser** after applying or resetting settings so changes take e
 
 ## Upgrading
 
-Download the new release archive, extract it, and replace your existing `cowardly` binary (or run from the new directory). Your config in `~/.config/cowardly/cowardly.yaml` is kept across upgrades.
+Download the new release archive, extract it (you’ll get a new versioned directory), then replace your existing `cowardly` binary or run from the new directory. Your config in `~/.config/cowardly/cowardly.yaml` is kept across upgrades.
 
 ## See also
 

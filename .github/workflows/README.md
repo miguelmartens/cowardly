@@ -79,7 +79,7 @@ Creates a GitHub Release with packed archives (`.tar.gz` per platform) when you 
 
 **What it does:**
 - Builds the Go binary for **darwin/amd64** and **darwin/arm64** (macOS Intel and Apple Silicon)
-- Packs each into `cowardly_v{VERSION}_{OS}_{ARCH}.tar.gz` containing the `cowardly` executable, CHANGELOG.md, LICENSE, and README.md
+- Packs each into `cowardly_v{VERSION}_{OS}_{ARCH}.tar.gz`; each archive contains a top-level directory (same name as the archive) with the `cowardly` executable, CHANGELOG.md, LICENSE, and README.md
 - Creates a GitHub Release from the tag and attaches the archives
 - Generates release notes from the tag
 

@@ -16,12 +16,12 @@ Inspired by [SlimBrave](https://github.com/ltx0101/SlimBrave), [Debloat Brave Br
 
 ## Install
 
-**From a release (recommended if you don’t need to build from source):** Download the latest [release](https://github.com/miguelmartens/cowardly/releases), pick the archive for your Mac (Apple Silicon: `*_darwin_arm64.tar.gz`, Intel: `*_darwin_x86_64.tar.gz`), then extract and run:
+**From a release (recommended if you don’t need to build from source):** Download the latest [release](https://github.com/miguelmartens/cowardly/releases), pick the archive for your Mac (Apple Silicon: `*_darwin_arm64.tar.gz`, Intel: `*_darwin_x86_64.tar.gz`), then extract (creates a directory), enter it, and run:
 
 ```bash
 tar xzf cowardly_vX.Y.Z_darwin_arm64.tar.gz   # or darwin_x86_64 for Intel
-chmod +x cowardly
-./cowardly
+cd cowardly_vX.Y.Z_darwin_arm64
+chmod +x cowardly && ./cowardly
 ```
 
 See **[docs/INSTALL.md](docs/INSTALL.md)** for full install instructions (where to download, PATH install, upgrading).
