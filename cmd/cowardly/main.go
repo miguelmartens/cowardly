@@ -4,6 +4,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -11,6 +12,7 @@ import (
 	"github.com/cowardly/cowardly/internal/config"
 	"github.com/cowardly/cowardly/internal/presets"
 	"github.com/cowardly/cowardly/internal/ui"
+	"github.com/cowardly/cowardly/internal/userconfig"
 )
 
 func main() {
@@ -52,6 +54,12 @@ func main() {
 			return
 		case strings.HasPrefix(arg, "apply-file="):
 			applyFile(strings.TrimPrefix(arg, "apply-file="))
+			return
+		case arg == "reapply":
+			reapply()
+			return
+		case arg == "install-login-hook":
+			installLoginHook()
 			return
 		case arg == "backups" || arg == "b":
 			listBackups()
@@ -145,6 +153,9 @@ func applyPreset(presetID string) {
 	} else {
 		fmt.Printf("Applied preset %q to user prefs. Restart Brave. For enforced policies, approve the macOS authentication dialog when you run apply.\n", p.Name)
 	}
+	if err := userconfig.WritePreset(presetID, p.Settings); err != nil {
+		fmt.Fprintf(os.Stderr, "Note: could not save desired state to ~/.config/cowardly: %v\n", err)
+	}
 }
 
 func applyFile(path string) {
@@ -176,6 +187,9 @@ func applyFile(path string) {
 		fmt.Printf("Applied %d setting(s) from file (enforced). Restart Brave.\n", len(settings))
 	} else {
 		fmt.Printf("Applied %d setting(s) from file to user prefs. Restart Brave.\n", len(settings))
+	}
+	if err := userconfig.WriteApplyFile(path, settings); err != nil {
+		fmt.Fprintf(os.Stderr, "Note: could not save desired state to ~/.config/cowardly: %v\n", err)
 	}
 }
 
@@ -315,6 +329,95 @@ func deleteBackup(path string) {
 	fmt.Println("Backup deleted.")
 }
 
+func reapply() {
+	if !brave.BraveInstalled() {
+		fmt.Fprintln(os.Stderr, "Brave Browser not found in /Applications.")
+		os.Exit(1)
+	}
+	if brave.BraveRunning() {
+		fmt.Fprintln(os.Stderr, "Warning: Brave is running. Quit Brave for a clean apply.")
+	}
+	desired, err := userconfig.Read()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "reapply: %v\n", err)
+		os.Exit(1)
+	}
+	if desired == nil || len(desired.Settings) == 0 {
+		fmt.Fprintln(os.Stderr, "No desired state saved. Apply a preset or use --apply-file first; then --reapply will restore it after a restart.")
+		os.Exit(1)
+	}
+	if path, err := brave.BackupUserPlist(); err == nil {
+		fmt.Fprintf(os.Stderr, "Backed up user plist to %s\n", path)
+	}
+	managed, err := brave.ApplySettings(desired.Settings)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "reapply failed: %v\n", err)
+		os.Exit(1)
+	}
+	if desired.Preset != "" {
+		fmt.Printf("Re-applied preset %q. Restart Brave for changes to take effect.\n", desired.Preset)
+	} else if desired.ApplyFile != "" {
+		fmt.Printf("Re-applied %d setting(s) from saved config. Restart Brave.\n", len(desired.Settings))
+	} else {
+		fmt.Printf("Re-applied %d setting(s). Restart Brave.\n", len(desired.Settings))
+	}
+	if managed {
+		fmt.Println("(Enforced.)")
+	} else {
+		fmt.Println("(User prefs; approve the macOS dialog when you run apply for enforced policies.)")
+	}
+}
+
+func installLoginHook() {
+	dir, err := userconfig.ConfigDir()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "install-login-hook: %v\n", err)
+		os.Exit(1)
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "install-login-hook: %v\n", err)
+		os.Exit(1)
+	}
+	launchAgentDir := filepath.Join(home, "Library", "LaunchAgents")
+	if err := os.MkdirAll(launchAgentDir, 0755); err != nil {
+		fmt.Fprintf(os.Stderr, "install-login-hook: %v\n", err)
+		os.Exit(1)
+	}
+	cowardlyPath, err := os.Executable()
+	if err != nil {
+		cowardlyPath = "cowardly" // fallback to PATH
+	}
+	plistPath := filepath.Join(launchAgentDir, "com.cowardly.reapply.plist")
+	plist := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.cowardly.reapply</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>%s</string>
+    <string>--reapply</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StandardErrorPath</key>
+  <string>%s/reapply.log</string>
+  <key>StandardOutPath</key>
+  <string>%s/reapply.log</string>
+</dict>
+</plist>
+`, cowardlyPath, dir, dir)
+	if err := os.WriteFile(plistPath, []byte(plist), 0644); err != nil {
+		fmt.Fprintf(os.Stderr, "install-login-hook: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Printf("Installed Launch Agent at %s\n", plistPath)
+	fmt.Println("Cowardly will run `cowardly --reapply` at login. To re-apply to managed preferences you may need to approve the macOS dialog when you log in.")
+	fmt.Println("To remove: rm", plistPath)
+}
+
 // resolveBackupPath returns the full path if path is a filename matching a backup, or path if it's already a full path that exists.
 func resolveBackupPath(path string) string {
 	path = strings.TrimSpace(path)
@@ -345,6 +448,8 @@ Usage:
   cowardly --apply, -a             Apply Quick Debloat preset and exit
   cowardly --apply=<id>            Apply preset by ID (e.g. quick, max-privacy)
   cowardly --apply-file=<path>    Apply settings from a YAML file
+  cowardly --reapply              Re-apply last saved desired state (~/.config/cowardly)
+  cowardly --install-login-hook    Install Launch Agent to run --reapply at login
   cowardly --dry-run [=<id>]       Show what would be applied (default: quick)
   cowardly --diff=<id>             Show which keys would change (current -> preset)
   cowardly --export=<path>         Export current settings to YAML file

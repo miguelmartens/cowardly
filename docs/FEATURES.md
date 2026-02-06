@@ -20,23 +20,33 @@ See [POLICY-ENFORCEMENT.md](POLICY-ENFORCEMENT.md) for the rationale and impleme
 - **View current settings** — Show which policy keys are set (user and managed when present).
 - **Reset all to default** — Confirm with **y** / **Y** / Enter, then reset; clear messaging about managed vs user and Brave quit requirement.
 - **Backups** — List backups, restore by path (Enter), or delete (d with confirmation).
+- **Re-apply** — If the TUI detects that current settings differ from your saved desired state (e.g. reverted after restart), it shows a hint and you can press **R** to re-apply.
 - **Exit** — Quit the TUI.
 - **Brave orange styling** — Titles, active selections, and list components use Brave’s brand colors.
 - **Message wrapping** — Long success/error messages (e.g. backup paths) wrap to terminal width.
 
+## Desired state and re-apply
+
+- **Config file** — When you apply a preset or a file (or Custom settings in the TUI), Cowardly saves the applied state to `~/.config/cowardly/cowardly.yaml` (preset id or apply-file path plus a full settings snapshot). This is your "desired state."
+- **Re-apply** — `--reapply` reads that config and re-applies the same settings. Use it after a restart when the organization or MDM has reverted your preferences.
+- **Login hook** — `--install-login-hook` installs a Launch Agent (`~/Library/LaunchAgents/com.cowardly.reapply.plist`) that runs `cowardly --reapply` at every login, so your desired state is restored automatically.
+- **TUI: reverted detection** — On startup, the TUI compares current Brave settings to the desired state. If they differ, it shows a message and lets you press **R** to re-apply without leaving the menu.
+
 ## CLI (non-interactive)
 
-| Feature         | Flags                                                                  |
-| --------------- | ---------------------------------------------------------------------- |
-| Apply preset    | `--apply`, `-a`, `--apply=<id>` (e.g. `max-privacy`, `balanced`)       |
-| Apply from file | `--apply-file=<path>` (YAML with same `settings` format as presets)    |
-| Dry run         | `--dry-run` (default: quick), `--dry-run=<id>`                         |
-| Diff            | `--diff=<id>` — key-by-key difference (current vs preset)              |
-| Export          | `--export=<path>` — current settings to YAML                           |
-| Reset           | `--reset`, `-r`                                                        |
-| View settings   | `--view`, `-v` — current settings and Brave version when available     |
-| Backups         | `--backups`, `-b` (list), `--restore=<path>`, `--delete-backup=<path>` |
-| Help            | `--help`, `-h`                                                         |
+| Feature           | Flags                                                                  |
+| ----------------- | ---------------------------------------------------------------------- |
+| Apply preset      | `--apply`, `-a`, `--apply=<id>` (e.g. `max-privacy`, `balanced`)       |
+| Apply from file   | `--apply-file=<path>` (YAML with same `settings` format as presets)   |
+| Re-apply          | `--reapply` — re-apply last saved state from `~/.config/cowardly/`    |
+| Install login hook | `--install-login-hook` — run `--reapply` at every login                |
+| Dry run           | `--dry-run` (default: quick), `--dry-run=<id>`                         |
+| Diff              | `--diff=<id>` — key-by-key difference (current vs preset)             |
+| Export            | `--export=<path>` — current settings to YAML                           |
+| Reset             | `--reset`, `-r`                                                        |
+| View settings     | `--view`, `-v` — current settings and Brave version when available    |
+| Backups           | `--backups`, `-b` (list), `--restore=<path>`, `--delete-backup=<path>` |
+| Help              | `--help`, `-h`                                                         |
 
 Apply and reset warn if Brave is running and block reset until Brave is quit.
 

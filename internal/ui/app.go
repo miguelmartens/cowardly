@@ -11,6 +11,7 @@ import (
 	"github.com/cowardly/cowardly/internal/brave"
 	"github.com/cowardly/cowardly/internal/config"
 	"github.com/cowardly/cowardly/internal/presets"
+	"github.com/cowardly/cowardly/internal/userconfig"
 	"github.com/mattn/go-runewidth"
 )
 
@@ -30,9 +31,28 @@ type backupDoneMsg struct {
 	err error
 	msg string
 }
+type settingsRevertedMsg struct {
+	reverted bool
+	preset   string
+}
+type reapplyDoneMsg struct {
+	managed bool
+	err     error
+	n       int
+	preset  string
+}
 
 func (m model) Init() tea.Cmd {
-	return nil
+	return func() tea.Msg {
+		desired, err := userconfig.Read()
+		if err != nil || desired == nil || len(desired.Settings) == 0 {
+			return settingsRevertedMsg{reverted: false}
+		}
+		if brave.Diff(desired.Settings) != "" {
+			return settingsRevertedMsg{reverted: true, preset: desired.Preset}
+		}
+		return settingsRevertedMsg{reverted: false}
+	}
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -45,6 +65,20 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch msg.String() {
 			case "q", "ctrl+c":
 				return m, tea.Quit
+			case "r", "R":
+				if m.settingsReverted {
+					return m, func() tea.Msg {
+						desired, err := userconfig.Read()
+						if err != nil {
+							return reapplyDoneMsg{err: err}
+						}
+						if desired == nil || len(desired.Settings) == 0 {
+							return reapplyDoneMsg{err: fmt.Errorf("desired state not found in ~/.config/cowardly/cowardly.yaml")}
+						}
+						managed, err := brave.ApplySettings(desired.Settings)
+						return reapplyDoneMsg{managed: managed, err: err, n: len(desired.Settings), preset: desired.Preset}
+					}
+				}
 			case "enter":
 				sel := m.mainList.Index()
 				switch sel {
@@ -262,10 +296,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if err != nil {
 			m.err = err.Error()
 			m.msg = ""
-		} else if managed {
-			m.msg += fmt.Sprintf("Applied preset: %s (enforced). Restart Brave for changes.", p.Name)
 		} else {
-			m.msg += fmt.Sprintf("Applied preset: %s. Restart Brave. For enforced policies, approve the macOS authentication dialog when you apply.", p.Name)
+			m.settingsReverted = false
+			_ = userconfig.WritePreset(p.ID, p.Settings)
+			if managed {
+				m.msg += fmt.Sprintf("Applied preset: %s (enforced). Restart Brave for changes.", p.Name)
+			} else {
+				m.msg += fmt.Sprintf("Applied preset: %s. Restart Brave. For enforced policies, approve the macOS authentication dialog when you apply.", p.Name)
+			}
 		}
 		m.state = stateMain
 		return m, nil
@@ -294,10 +332,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if err != nil {
 			m.err = err.Error()
 			m.msg = ""
-		} else if managed {
-			m.msg += fmt.Sprintf("Applied %d setting(s) (enforced). Restart Brave for changes.", len(toApply))
 		} else {
-			m.msg += fmt.Sprintf("Applied %d setting(s). Restart Brave. For enforced policies, approve the macOS authentication dialog when you apply.", len(toApply))
+			m.settingsReverted = false
+			_ = userconfig.WriteSettings(toApply)
+			if managed {
+				m.msg += fmt.Sprintf("Applied %d setting(s) (enforced). Restart Brave for changes.", len(toApply))
+			} else {
+				m.msg += fmt.Sprintf("Applied %d setting(s). Restart Brave. For enforced policies, approve the macOS authentication dialog when you apply.", len(toApply))
+			}
 		}
 		m.state = stateMain
 		return m, nil
@@ -351,6 +393,28 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.msg = msg.msg
 		}
 		return m, nil
+
+	case settingsRevertedMsg:
+		m.settingsReverted = msg.reverted
+		m.revertedPreset = msg.preset
+		return m, nil
+
+	case reapplyDoneMsg:
+		m.settingsReverted = false
+		m.state = stateMain
+		if msg.err != nil {
+			m.err = msg.err.Error()
+			return m, nil
+		}
+		if msg.preset != "" {
+			m.msg = fmt.Sprintf("Re-applied preset %q (%d settings). Restart Brave for changes.", msg.preset, msg.n)
+		} else {
+			m.msg = fmt.Sprintf("Re-applied %d setting(s). Restart Brave for changes.", msg.n)
+		}
+		if msg.managed {
+			m.msg += " (Enforced.)"
+		}
+		return m, nil
 	}
 
 	return m, nil
@@ -370,7 +434,19 @@ func (m model) View() string {
 
 	switch m.state {
 	case stateMain:
-		return titleStyle.Render("Cowardly — Brave Browser Debloater") + "\n" + m.mainList.View() + dimStyle.Render("\n↑/k up  ↓/j down  enter select  q quit")
+		mainView := titleStyle.Render("Cowardly — Brave Browser Debloater") + "\n"
+		if m.settingsReverted {
+			revertHint := "Settings may have been reverted (e.g. after restart). Press " + activeStyle.Render("R") + " to re-apply your saved preset."
+			if m.revertedPreset != "" {
+				revertHint = "Settings may have been reverted. Press " + activeStyle.Render("R") + " to re-apply preset \"" + m.revertedPreset + "\"."
+			}
+			mainView += dimStyle.Render(revertHint) + "\n\n"
+		}
+		mainView += m.mainList.View() + dimStyle.Render("\n↑/k up  ↓/j down  enter select  q quit")
+		if m.settingsReverted {
+			mainView += dimStyle.Render("  r re-apply")
+		}
+		return mainView
 	case statePreset:
 		return titleStyle.Render("Choose a preset") + "\n" + m.presetList.View() + dimStyle.Render("\nenter apply  esc back")
 	case stateCustom:
