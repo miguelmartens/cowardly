@@ -34,19 +34,19 @@ See [POLICY-ENFORCEMENT.md](POLICY-ENFORCEMENT.md) for the rationale and impleme
 
 ## CLI (non-interactive)
 
-| Feature           | Flags                                                                  |
-| ----------------- | ---------------------------------------------------------------------- |
-| Apply preset      | `--apply`, `-a`, `--apply=<id>` (e.g. `max-privacy`, `balanced`)       |
-| Apply from file   | `--apply-file=<path>` (YAML with same `settings` format as presets)   |
-| Re-apply          | `--reapply` — re-apply last saved state from `~/.config/cowardly/`    |
+| Feature            | Flags                                                                  |
+| ------------------ | ---------------------------------------------------------------------- |
+| Apply preset       | `--apply`, `-a`, `--apply=<id>` (e.g. `max-privacy`, `balanced`)       |
+| Apply from file    | `--apply-file=<path>` (YAML with same `settings` format as presets)    |
+| Re-apply           | `--reapply` — re-apply last saved state from `~/.config/cowardly/`     |
 | Install login hook | `--install-login-hook` — run `--reapply` at every login                |
-| Dry run           | `--dry-run` (default: quick), `--dry-run=<id>`                         |
-| Diff              | `--diff=<id>` — key-by-key difference (current vs preset)             |
-| Export            | `--export=<path>` — current settings to YAML                           |
-| Reset             | `--reset`, `-r`                                                        |
-| View settings     | `--view`, `-v` — current settings and Brave version when available    |
-| Backups           | `--backups`, `-b` (list), `--restore=<path>`, `--delete-backup=<path>` |
-| Help              | `--help`, `-h`                                                         |
+| Dry run            | `--dry-run` (default: quick), `--dry-run=<id>`                         |
+| Diff               | `--diff=<id>` — key-by-key difference (current vs preset)              |
+| Export             | `--export=<path>` — current settings to YAML                           |
+| Reset              | `--reset`, `-r`                                                        |
+| View settings      | `--view`, `-v` — current settings and Brave version when available     |
+| Backups            | `--backups`, `-b` (list), `--restore=<path>`, `--delete-backup=<path>` |
+| Help               | `--help`, `-h`                                                         |
 
 Apply and reset warn if Brave is running and block reset until Brave is quit.
 
