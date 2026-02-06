@@ -11,7 +11,7 @@ BIN_DIR := bin
 SCRIPTS := scripts
 OUT     := $(BIN_DIR)/$(BINARY)
 
-.PHONY: help build run dev test lint lint-yaml fmt format format-check prettier renovate clean install
+.PHONY: help build run dev test lint lint-yaml fmt format format-check prettier renovate clean install bump-version
 
 help:
 	@echo "cowardly — Brave Browser debloater for macOS"
@@ -30,6 +30,7 @@ help:
 	@echo "  renovate      run renovate (dry-run)"
 	@echo "  clean         remove built binary"
 	@echo "  install       build and install to $$(go env GOPATH)/bin"
+	@echo "  bump-version  create git tag and push (PART=patch|minor|major, default: patch)"
 	@echo ""
 	@echo "Default: run 'make run' or 'make build' then '$(OUT)'"
 
@@ -81,3 +82,23 @@ clean:
 
 install: build
 	go install $(MAIN)
+
+# Bump version: create annotated tag and push. Triggers release workflow.
+# Usage: make bump-version [PART=patch|minor|major]
+PART ?= patch
+bump-version:
+	@CURRENT=$$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0"); \
+	V=$${CURRENT#v}; V=$${V%%-*}; \
+	MAJOR=$${V%%.*}; rest=$${V#*.}; \
+	MINOR=$${rest%%.*}; rest=$${rest#*.}; \
+	PATCH=$${rest%%.*}; \
+	case "$(PART)" in \
+	  major) MAJOR=$$((MAJOR+1)); MINOR=0; PATCH=0 ;; \
+	  minor) MINOR=$$((MINOR+1)); PATCH=0 ;; \
+	  patch) PATCH=$$((PATCH+1)) ;; \
+	  *) echo "PART must be major, minor, or patch"; exit 1 ;; \
+	esac; \
+	NEW_TAG="v$${MAJOR}.$${MINOR}.$${PATCH}"; \
+	echo "Creating tag $$NEW_TAG..."; \
+	git tag -a "$$NEW_TAG" -m "Release $$NEW_TAG"; \
+	git push origin "$$NEW_TAG"

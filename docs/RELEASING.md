@@ -29,6 +29,18 @@ The workflow triggers on any tag that starts with `v` (pattern `v*`).
 
 From your repo root, on the branch you want to release (e.g. `main`):
 
+**Using `make bump-version` (recommended):**
+
+```bash
+make bump-version           # bump patch (e.g. v0.2.3 → v0.2.4)
+make bump-version PART=minor  # bump minor (e.g. v0.2.3 → v0.3.0)
+make bump-version PART=major  # bump major (e.g. v0.2.3 → v1.0.0)
+```
+
+This reads the latest tag, bumps the version, creates an annotated tag, and pushes it. The release workflow triggers on push.
+
+**Manual tagging:**
+
 ```bash
 # Create an annotated tag (recommended; stores date and message)
 git tag -a v1.0.0 -m "Release v1.0.0"

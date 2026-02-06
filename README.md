@@ -196,6 +196,7 @@ The repo follows the [Standard Go Project Layout](https://github.com/golang-stan
 ## Development
 
 - **Go:** `make fmt` (format code, tidy modules), `make test`, `make lint` ([golangci-lint](https://golangci-lint.run) v2). See [.golangci.reference.yml](https://github.com/golangci/golangci-lint/blob/HEAD/.golangci.reference.yml) for lint config.
+- **Releases:** `make bump-version` or `make bump-version PART=minor|major` to create a git tag and push (triggers the release workflow). See [docs/RELEASING.md](docs/RELEASING.md).
 - **Markdown/YAML/JSON:** `make format-check` (CI check) or `make format` / `make prettier` to fix. Prettier is pinned to 3.3.2.
 - **YAML:** `make lint-yaml` (yamllint; config in `.yamllint.yml`).
 
