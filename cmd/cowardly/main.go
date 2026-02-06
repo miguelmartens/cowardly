@@ -46,6 +46,12 @@ func main() {
 		case strings.HasPrefix(arg, "apply="):
 			applyPreset(strings.TrimPrefix(arg, "apply="))
 			return
+		case arg == "privacy-guides":
+			applyPrivacyGuides(parsePrivacyGuidesBase("privacy-guides"))
+			return
+		case strings.HasPrefix(arg, "privacy-guides="):
+			applyPrivacyGuides(strings.TrimPrefix(arg, "privacy-guides="))
+			return
 		case arg == "dry-run":
 			dryRun("quick")
 			return
@@ -105,6 +111,22 @@ func versionInfo() {
 	}
 }
 
+// parsePrivacyGuidesBase returns the base preset ID if presetID is privacy-guides form, else "".
+// "privacy-guides" -> config base if set, else "quick"; "privacy-guides:max-privacy" -> "max-privacy".
+func parsePrivacyGuidesBase(presetID string) string {
+	if presetID == "privacy-guides" {
+		base, _ := userconfig.PrivacyGuidesBaseFromConfig()
+		if base != "" {
+			return base
+		}
+		return presets.PrivacyGuidesBasePresetID
+	}
+	if strings.HasPrefix(presetID, "privacy-guides:") {
+		return strings.TrimPrefix(presetID, "privacy-guides:")
+	}
+	return ""
+}
+
 func findPreset(id string) *presets.Preset {
 	plist, _ := presets.AllWithError()
 	if plist == nil {
@@ -118,28 +140,100 @@ func findPreset(id string) *presets.Preset {
 	return nil
 }
 
-func dryRun(presetID string) {
-	p := findPreset(presetID)
-	if p == nil {
-		fmt.Fprintf(os.Stderr, "Preset %q not found.\n", presetID)
-		os.Exit(1)
+func privacyGuidesSettings(baseID string) ([]brave.Setting, error) {
+	if baseID == "custom" {
+		desired, _ := userconfig.Read()
+		if desired == nil || len(desired.Settings) == 0 {
+			return nil, fmt.Errorf("no custom settings in config to use as base")
+		}
+		supplement, err := presets.LoadPrivacyGuides()
+		if err != nil {
+			return nil, err
+		}
+		return presets.MergeSettingsWithSupplement(desired.Settings, supplement), nil
 	}
-	fmt.Println(brave.DryRun(p.Settings))
+	return presets.PrivacyGuidesMerged(baseID)
+}
+
+func dryRun(presetID string) {
+	var settings []brave.Setting
+	if baseID := parsePrivacyGuidesBase(presetID); baseID != "" {
+		var err error
+		settings, err = privacyGuidesSettings(baseID)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "privacy-guides: %v\n", err)
+			os.Exit(1)
+		}
+	} else {
+		p := findPreset(presetID)
+		if p == nil {
+			fmt.Fprintf(os.Stderr, "Preset %q not found.\n", presetID)
+			os.Exit(1)
+		}
+		settings = p.Settings
+	}
+	fmt.Println(brave.DryRun(settings))
 }
 
 func diffPreset(presetID string) {
-	p := findPreset(presetID)
-	if p == nil {
-		fmt.Fprintf(os.Stderr, "Preset %q not found.\n", presetID)
-		os.Exit(1)
+	var settings []brave.Setting
+	if baseID := parsePrivacyGuidesBase(presetID); baseID != "" {
+		var err error
+		settings, err = privacyGuidesSettings(baseID)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "privacy-guides: %v\n", err)
+			os.Exit(1)
+		}
+	} else {
+		p := findPreset(presetID)
+		if p == nil {
+			fmt.Fprintf(os.Stderr, "Preset %q not found.\n", presetID)
+			os.Exit(1)
+		}
+		settings = p.Settings
 	}
-	diff := brave.Diff(p.Settings)
+	diff := brave.Diff(settings)
 	if diff == "" {
 		fmt.Println("No changes (current values match preset).")
 		return
 	}
 	fmt.Println("Would change:")
 	fmt.Println(diff)
+}
+
+func applyPrivacyGuides(basePresetID string) {
+	if basePresetID == "" {
+		basePresetID = presets.PrivacyGuidesBasePresetID
+	}
+	if !brave.BraveInstalled() {
+		fmt.Fprintln(os.Stderr, "Brave Browser not found in /Applications.")
+		os.Exit(1)
+	}
+	if brave.BraveRunning() {
+		fmt.Fprintln(os.Stderr, "Warning: Brave is running. Quit Brave for a clean apply.")
+	}
+	settings, err := privacyGuidesSettings(basePresetID)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "privacy-guides: %v\n", err)
+		os.Exit(1)
+	}
+	if path, err := brave.BackupUserPlist(); err == nil {
+		fmt.Fprintf(os.Stderr, "Backed up user plist to %s\n", path)
+	}
+	managed, err := brave.ApplySettings(settings)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "apply failed: %v\n", err)
+		os.Exit(1)
+	}
+	if managed {
+		fmt.Printf("Applied Privacy Guides recommendations (enforced). Restart Brave for changes to take effect.\n")
+	} else {
+		fmt.Printf("Applied Privacy Guides recommendations. Restart Brave. For enforced policies, approve the macOS authentication dialog when you run apply.\n")
+	}
+	fmt.Fprintf(os.Stderr, "Source: %s\n", presets.PrivacyGuidesURL)
+	if err := userconfig.WritePrivacyGuides(basePresetID); err != nil {
+		fmt.Fprintf(os.Stderr, "Note: could not save desired state to ~/.config/cowardly: %v\n", err)
+	}
 }
 
 func applyPreset(presetID string) {
@@ -459,6 +553,7 @@ Usage:
   cowardly                        Start the TUI
   cowardly --apply, -a             Apply Quick Debloat preset and exit
   cowardly --apply=<id>            Apply preset by ID (e.g. quick, max-privacy)
+  cowardly --privacy-guides [=base] Apply Privacy Guides supplement (default base: quick)
   cowardly --apply-file=<path>    Apply settings from a YAML file
   cowardly --reapply              Re-apply last saved desired state (~/.config/cowardly)
   cowardly --install-login-hook    Install Launch Agent to run --reapply at login

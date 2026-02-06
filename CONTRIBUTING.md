@@ -77,6 +77,7 @@ Thank you for your interest in contributing. This document explains how to get s
 
 - [README.md](README.md) — Install, usage, presets
 - [docs/ADDING-PRESETS.md](docs/ADDING-PRESETS.md) — How to add a preset
+- [docs/PRIVACY-GUIDES.md](docs/PRIVACY-GUIDES.md) — Privacy Guides supplement
 - [docs/PROJECT-LAYOUT.md](docs/PROJECT-LAYOUT.md) — Directory structure
 - [docs/FUTURE.md](docs/FUTURE.md) — Possible improvements
 - [.github/workflows/README.md](.github/workflows/README.md) — CI workflows

@@ -4,6 +4,8 @@ import (
 	"os"
 	"path"
 	"testing"
+
+	"github.com/cowardly/cowardly/internal/brave"
 )
 
 func TestConvertSettingsKeyValidation(t *testing.T) {
@@ -83,6 +85,71 @@ func TestLoadFromFS_NoDir(t *testing.T) {
 	_, err := LoadFromFS(fsys, "nonexistent")
 	if err == nil {
 		t.Error("expected error for nonexistent dir")
+	}
+}
+
+func TestLoadPrivacyGuides(t *testing.T) {
+	settings, err := LoadPrivacyGuides()
+	if err != nil {
+		t.Fatalf("LoadPrivacyGuides: %v", err)
+	}
+	if len(settings) == 0 {
+		t.Error("expected non-empty supplement")
+	}
+	keys := make(map[string]bool)
+	for _, s := range settings {
+		keys[s.Key] = true
+	}
+	for _, k := range []string{"BraveP3AEnabled", "DefaultBraveFingerprintingV2Setting", "BraveDeAmpEnabled"} {
+		if !keys[k] {
+			t.Errorf("expected key %q in Privacy Guides supplement", k)
+		}
+	}
+}
+
+func TestPrivacyGuidesMerged(t *testing.T) {
+	merged, err := PrivacyGuidesMerged("quick")
+	if err != nil {
+		t.Fatalf("PrivacyGuidesMerged: %v", err)
+	}
+	keys := make(map[string]bool)
+	for _, s := range merged {
+		keys[s.Key] = true
+	}
+	// Merged = Quick Debloat + supplement; should have both
+	if !keys["BraveRewardsDisabled"] {
+		t.Error("merged should include base preset key BraveRewardsDisabled")
+	}
+	if !keys["BraveP3AEnabled"] {
+		t.Error("merged should include supplement key BraveP3AEnabled")
+	}
+}
+
+func TestMergeSettingsWithSupplement(t *testing.T) {
+	base := []brave.Setting{
+		{Key: "A", Value: true, Type: brave.TypeBool},
+		{Key: "B", Value: 1, Type: brave.TypeInteger},
+	}
+	supplement := []brave.Setting{
+		{Key: "B", Value: 2, Type: brave.TypeInteger},  // overlay
+		{Key: "C", Value: "x", Type: brave.TypeString}, // new
+	}
+	merged := MergeSettingsWithSupplement(base, supplement)
+	byKey := make(map[string]brave.Setting)
+	for _, s := range merged {
+		byKey[s.Key] = s
+	}
+	if len(merged) != 3 {
+		t.Errorf("merged should have 3 entries, got %d", len(merged))
+	}
+	if v, ok := byKey["A"]; !ok || v.Value != true {
+		t.Errorf("A should be true from base, got %v", v.Value)
+	}
+	if v, ok := byKey["B"]; !ok || v.Value != 2 {
+		t.Errorf("B should be 2 (overlay from supplement), got %v", v.Value)
+	}
+	if v, ok := byKey["C"]; !ok || v.Value != "x" {
+		t.Errorf("C should be x from supplement, got %v", v.Value)
 	}
 }
 

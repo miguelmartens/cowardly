@@ -6,6 +6,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/cowardly/cowardly/internal/config"
 	"github.com/cowardly/cowardly/internal/presets"
+	"github.com/cowardly/cowardly/internal/userconfig"
 )
 
 type state int
@@ -13,6 +14,8 @@ type state int
 const (
 	stateMain state = iota
 	statePreset
+	statePrivacyGuidesBase
+	statePrivacyGuidesConfirm
 	stateCustom
 	stateViewSettings
 	stateResetConfirm
@@ -21,25 +24,27 @@ const (
 )
 
 type model struct {
-	state            state
-	mainList         list.Model
-	presetList       list.Model
-	backupList       list.Model
-	backupPaths      []string
-	confirmPath      string
-	confirmAction    string // "restore" or "delete"
-	customIdx        int
-	customOrder      []int // indices in display order (by category)
-	customToggles    map[int]bool
-	customSettings   []config.CustomSetting
-	viewKeys         []string
-	viewScroll       int
-	width            int
-	height           int
-	err              string
-	msg              string
-	settingsReverted bool   // true if desired state exists but current differs (e.g. after MDM revert)
-	revertedPreset   string // preset id from desired state, for message
+	state                     state
+	mainList                  list.Model
+	presetList                list.Model
+	backupList                list.Model
+	backupPaths               []string
+	confirmPath               string
+	confirmAction             string // "restore" or "delete"
+	customIdx                 int
+	customOrder               []int // indices in display order (by category)
+	customToggles             map[int]bool
+	customSettings            []config.CustomSetting
+	viewKeys                  []string
+	viewScroll                int
+	width                     int
+	height                    int
+	err                       string
+	msg                       string
+	settingsReverted          bool   // true if desired state exists but current differs (e.g. after MDM revert)
+	revertedPreset            string // preset id from desired state, for message
+	privacyGuidesBasePresetID string // selected base preset when applying Privacy Guides
+	privacyGuidesHasCustom    bool   // Custom was added to base preset list (config has preset.custom)
 }
 
 // Brave brand orange and palette (Brave orange #ff631c, lighter accent #ff9f5c).
@@ -83,6 +88,7 @@ func braveListStyles() list.Styles {
 func NewModel() model {
 	mainItems := []list.Item{
 		item{title: "Apply a preset", desc: "Quick Debloat, Maximum Privacy, Balanced, etc."},
+		item{title: "Privacy Guides recommendations", desc: "Apply Privacy Guides recommended Brave configuration"},
 		item{title: "Custom", desc: "Choose exactly which settings to apply"},
 		item{title: "View current settings", desc: "See what's currently configured"},
 		item{title: "Reset all to default", desc: "Remove all Brave policy settings"},
@@ -94,11 +100,7 @@ func NewModel() model {
 	mainList.Styles = braveListStyles()
 	mainList.SetShowStatusBar(false)
 
-	presetItems := make([]list.Item, 0, len(presets.All())+1)
-	presetItems = append(presetItems, item{title: "← Back", desc: "Return to main menu"})
-	for _, p := range presets.All() {
-		presetItems = append(presetItems, item{title: p.Name, desc: p.Description})
-	}
+	presetItems := presetListItems(false)
 	presetList := list.New(presetItems, braveListDelegate(), 0, 0)
 	presetList.Title = "Choose a preset"
 	presetList.Styles = braveListStyles()
@@ -154,6 +156,22 @@ func NewModel() model {
 		settingsReverted: false,
 		revertedPreset:   "",
 	}
+}
+
+// presetListItems returns list items for the preset list.
+// If includeCustom is true and config has preset.custom, appends Custom as last item.
+func presetListItems(includeCustom bool) []list.Item {
+	items := []list.Item{item{title: "← Back", desc: "Return to main menu"}}
+	for _, p := range presets.All() {
+		items = append(items, item{title: p.Name, desc: p.Description})
+	}
+	if includeCustom {
+		desired, _ := userconfig.Read()
+		if desired != nil && desired.Preset == "custom" && len(desired.Settings) > 0 {
+			items = append(items, item{title: "Custom", desc: "Your saved custom settings"})
+		}
+	}
+	return items
 }
 
 type item struct {
