@@ -45,7 +45,7 @@ chmod +x cowardly
 
 ## If macOS blocks the app (Gatekeeper)
 
-macOS may show: *“cowardly” can’t be opened because Apple cannot check it for malicious software.* The release binary is not code-signed; you can still run it safely:
+macOS may show: _“cowardly” can’t be opened because Apple cannot check it for malicious software._ The release binary is not code-signed; you can still run it safely:
 
 1. **Right-click → Open** — In Finder, right-click (or Control-click) the `cowardly` binary, choose **Open**, then click **Open** in the dialog. After that, `./cowardly` from the terminal will work.
 2. **Open Anyway** — If you already tried to run it, go to **System Settings → Privacy & Security**, scroll down, and click **Open Anyway** next to the message about cowardly.
