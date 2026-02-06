@@ -11,7 +11,7 @@ BIN_DIR := bin
 SCRIPTS := scripts
 OUT     := $(BIN_DIR)/$(BINARY)
 
-.PHONY: help build run test lint lint-yaml fmt format format-check prettier renovate clean install
+.PHONY: help build run dev test lint lint-yaml fmt format format-check prettier renovate clean install
 
 help:
 	@echo "cowardly — Brave Browser debloater for macOS"
@@ -19,6 +19,7 @@ help:
 	@echo "Targets:"
 	@echo "  build         build binary to $(OUT)"
 	@echo "  run           build and run the TUI"
+	@echo "  dev           clean, then build and run the TUI"
 	@echo "  test          run tests"
 	@echo "  lint          run golangci-lint"
 	@echo "  lint-yaml     run yamllint on YAML files"
@@ -38,6 +39,8 @@ build:
 
 run: build
 	$(OUT)
+
+dev: clean run
 
 # Run all package tests (*_test.go alongside code; no separate /test dir per Go convention)
 test:
