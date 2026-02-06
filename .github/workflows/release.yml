@@ -33,11 +33,11 @@ jobs:
               ARCH_NAME="$GOARCH"
             fi
             GOOS="$GOOS" GOARCH="$GOARCH" go build -o cowardly -ldflags="-s -w" ./cmd/cowardly
-            STAGING="staging_${GOOS}_${GOARCH}"
-            mkdir -p "$STAGING"
-            cp cowardly CHANGELOG.md LICENSE README.md "$STAGING/"
-            tar czf "cowardly_${VERSION}_${GOOS}_${ARCH_NAME}.tar.gz" -C "$STAGING" cowardly CHANGELOG.md LICENSE README.md
-            rm -rf "$STAGING"
+            DIRNAME="cowardly_${VERSION}_${GOOS}_${ARCH_NAME}"
+            mkdir -p "$DIRNAME"
+            cp cowardly CHANGELOG.md LICENSE README.md "$DIRNAME/"
+            tar czf "${DIRNAME}.tar.gz" "$DIRNAME"
+            rm -rf "$DIRNAME"
           done
 
       - name: Create Release
