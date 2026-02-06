@@ -20,19 +20,30 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Build
+      - name: Build and pack
         run: |
+          VERSION="${{ github.ref_name }}"
           export CGO_ENABLED=0
           for pair in darwin/amd64 darwin/arm64; do
-            GOOS="${pair%/*}" GOARCH="${pair#*/}" go build -o "cowardly-${pair%/*}-${pair#*/}" ./cmd/cowardly
+            GOOS="${pair%/*}"
+            GOARCH="${pair#*/}"
+            if [ "$GOARCH" = "amd64" ]; then
+              ARCH_NAME="x86_64"
+            else
+              ARCH_NAME="$GOARCH"
+            fi
+            GOOS="$GOOS" GOARCH="$GOARCH" go build -o cowardly -ldflags="-s -w" ./cmd/cowardly
+            STAGING="staging_${GOOS}_${GOARCH}"
+            mkdir -p "$STAGING"
+            cp cowardly CHANGELOG.md LICENSE README.md "$STAGING/"
+            tar czf "cowardly_${VERSION}_${GOOS}_${ARCH_NAME}.tar.gz" -C "$STAGING" cowardly CHANGELOG.md LICENSE README.md
+            rm -rf "$STAGING"
           done
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            cowardly-darwin-amd64
-            cowardly-darwin-arm64
+          files: cowardly_*.tar.gz
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

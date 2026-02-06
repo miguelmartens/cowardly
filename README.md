@@ -16,6 +16,18 @@ Inspired by [SlimBrave](https://github.com/ltx0101/SlimBrave), [Debloat Brave Br
 
 ## Install
 
+**From a release (recommended if you don’t need to build from source):** Download the latest [release](https://github.com/miguelmartens/cowardly/releases), pick the archive for your Mac (Apple Silicon: `*_darwin_arm64.tar.gz`, Intel: `*_darwin_x86_64.tar.gz`), then extract and run:
+
+```bash
+tar xzf cowardly_vX.Y.Z_darwin_arm64.tar.gz   # or darwin_x86_64 for Intel
+chmod +x cowardly
+./cowardly
+```
+
+See **[docs/INSTALL.md](docs/INSTALL.md)** for full install instructions (where to download, PATH install, upgrading).
+
+**From source:**
+
 ```bash
 git clone https://github.com/miguelmartens/cowardly.git
 cd cowardly
@@ -180,12 +192,7 @@ The repo follows the [Standard Go Project Layout](https://github.com/golang-stan
 
 ## Contributing
 
-1. Fork the repo and clone it. Ensure you have **Go 1.25.6+** and (optional) **golangci-lint**, **prettier**, and **yamllint** for local checks.
-2. Create a branch for your change. Make your edits; add presets in [configs/presets/](configs/presets/) if needed (see [docs/ADDING-PRESETS.md](docs/ADDING-PRESETS.md)).
-3. Before opening a PR, run: `make test`, `make lint`, `make format-check`, and `make lint-yaml`. Fix any failures so CI passes.
-4. Open a pull request with a short description of the change. For bugs or features, opening an issue first is welcome.
-
-CI runs **gitleaks**, **prettier** (format check), and **yaml-lint** on push and pull requests; see [.github/workflows/README.md](.github/workflows/README.md).
+See **[CONTRIBUTING.md](CONTRIBUTING.md)** for setup, development commands, and how to open a pull request. In short: fork, create a branch, run `make test` / `make lint` / `make format-check` / `make lint-yaml`, then open a PR. For new presets, add a YAML file in [configs/presets/](configs/presets/) (see [docs/ADDING-PRESETS.md](docs/ADDING-PRESETS.md)).
 
 ## Disclaimer
 

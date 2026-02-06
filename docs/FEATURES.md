@@ -83,6 +83,7 @@ Apply and reset warn if Brave is running and block reset until Brave is quit.
 ## Documentation
 
 - **README.md** — Install, usage (TUI + CLI), presets table, custom settings, project layout, development, contributing, disclaimer.
+- **docs/INSTALL.md** — Install from a release (download, extract, run, install to PATH, upgrade).
 - **docs/ADDING-PRESETS.md** — How to add presets (YAML format, keys reference, troubleshooting).
 - **docs/PLATFORMS.md** — macOS-only today; possible Linux/Windows and policy mechanisms.
 - **docs/POLICY-ENFORCEMENT.md** — Why managed preferences, implementation (raw plist, AppleScript), MDM note.

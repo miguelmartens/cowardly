@@ -5,7 +5,7 @@ This document explains how to publish a release of **cowardly** (create a versio
 ## Overview
 
 - **Tagging** is done manually (or via the GitHub UI). There is no workflow that creates tags for you.
-- **Releasing** is automated: when you push a tag matching `v*`, the [release workflow](../.github/workflows/release.yml) runs, builds the binaries, and creates a [GitHub Release](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository) with the assets attached.
+- **Releasing** is automated: when you push a tag matching `v*`, the [release workflow](../.github/workflows/release.yml) runs, builds the binary for each platform, packs each into a `.tar.gz` with CHANGELOG.md, LICENSE, and README.md, and creates a [GitHub Release](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository) with those archives attached.
 
 ## Tag format
 
@@ -50,25 +50,28 @@ git push origin v1.0.0
 - The job will:
   1. Check out the code
   2. Set up Go (version from `go.mod`)
-  3. Build `cowardly` for **darwin/amd64** (Intel) and **darwin/arm64** (Apple Silicon)
-  4. Create a GitHub Release for the tag and attach both binaries
+  3. For **darwin/amd64** (Intel) and **darwin/arm64** (Apple Silicon): build `cowardly`, then create a `.tar.gz` containing the executable, CHANGELOG.md, LICENSE, and README.md
+  4. Create a GitHub Release for the tag and attach the archives
   5. Generate release notes from the tag
 
 ### 4. Download or share the release
 
 - Open the **Releases** page of the repository.
 - The new release will appear with the tag name (e.g. `v1.0.0`) and two assets:
-  - `cowardly-darwin-amd64`
-  - `cowardly-darwin-arm64`
+  - `cowardly_v1.0.0_darwin_x86_64.tar.gz` (Intel Mac)
+  - `cowardly_v1.0.0_darwin_arm64.tar.gz` (Apple Silicon)
 
-Users can download the correct binary, e.g.:
+Asset names follow the format **`cowardly_v{VERSION}_{OS}_{ARCH}.tar.gz`** (e.g. for future Linux: `cowardly_v1.0.0_linux_x86_64.tar.gz`). Each archive contains the `cowardly` executable plus CHANGELOG.md, LICENSE, and README.md.
+
+Users can download and run, e.g. for Apple Silicon:
 
 ```bash
-chmod +x cowardly-darwin-arm64
-./cowardly-darwin-arm64
+tar xzf cowardly_v1.0.0_darwin_arm64.tar.gz
+chmod +x cowardly
+./cowardly
 ```
 
-(Or rename to `cowardly` and move to a directory in `PATH`.)
+(Or move `cowardly` to a directory in `PATH`.)
 
 ## Releasing from the GitHub UI
 
@@ -79,18 +82,18 @@ You can also create a release (and tag) from the GitHub website:
 3. Add a title and description if you like.
 4. Publish the release.
 
-**Note:** Creating only a tag in the UI (without publishing a release) will still trigger the release workflow, which will then create the release and attach the built binaries. So either “publish release” with a new tag or “create tag and push” from the CLI will result in the same automated build and release.
+**Note:** Creating only a tag in the UI (without publishing a release) will still trigger the release workflow, which will then create the release and attach the built archives. So either “publish release” with a new tag or “create tag and push” from the CLI will result in the same automated build and release.
 
 ## What the workflow does not do
 
 - It does **not** create tags. You (or the GitHub UI) create the tag; the workflow runs when the tag is pushed.
 - It does **not** run on every push to `main`. Only tag pushes matching `v*` trigger it.
-- It only builds for **macOS** (darwin). Other OS/arch are not built (cowardly is macOS-only).
+- It only builds for **macOS** (darwin). Other OS/arch (e.g. Linux, Windows) are not built yet; when added, archives will follow the same naming: `cowardly_v{VERSION}_{OS}_{ARCH}.tar.gz` or `.zip` for Windows.
 
 ## Troubleshooting
 
 - **Workflow didn’t run** — Ensure the tag was pushed to the same repo (`git push origin v1.0.0`). Check the **Actions** tab for the run.
-- **Release exists but no binaries** — Check the workflow logs for the “Create Release” step; the job needs `contents: write` (already set in the workflow).
+- **Release exists but no assets** — Check the workflow logs for the "Build and pack" and “Create Release” steps; the job needs `contents: write` (already set in the workflow).
 - **Wrong Go version** — The workflow uses `go-version-file: go.mod`; the Go version in `go.mod` is used to run the build.
 
 ## See also
