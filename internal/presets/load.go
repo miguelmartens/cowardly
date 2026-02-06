@@ -27,11 +27,15 @@ type presetFile struct {
 	Settings    []settingRow `yaml:"settings"`
 }
 
-type settingRow struct {
+// SettingRow is one key/value/type row as in preset or config YAML. Exported for use by userconfig.
+type SettingRow struct {
 	Key   string      `yaml:"key"`
 	Value interface{} `yaml:"value"`
 	Type  string      `yaml:"type"`
 }
+
+// settingRow is an alias for internal use (presetFile, settingsFile).
+type settingRow = SettingRow
 
 var cachedPresets []Preset
 
@@ -95,6 +99,11 @@ func LoadFromFS(fsys fs.FS, dir string) ([]Preset, error) {
 		})
 	}
 	return out, nil
+}
+
+// ConvertSettingRows converts YAML setting rows to brave settings. Used by presets and userconfig.
+func ConvertSettingRows(rows []SettingRow) ([]brave.Setting, error) {
+	return convertSettings(rows)
 }
 
 func convertSettings(rows []settingRow) ([]brave.Setting, error) {

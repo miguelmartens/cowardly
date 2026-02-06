@@ -17,7 +17,7 @@ Inspired by [SlimBrave](https://github.com/ltx0101/SlimBrave), [Debloat Brave Br
 ## Install
 
 ```bash
-git clone https://github.com/yourusername/cowardly.git
+git clone https://github.com/miguelmartens/cowardly.git
 cd cowardly
 make build
 ./bin/cowardly
@@ -34,6 +34,12 @@ To build and run from the repo (e.g. for development):
 
 ```bash
 make run
+```
+
+For a clean build and run (removes the binary first):
+
+```bash
+make dev
 ```
 
 For repository setup and Renovate automation, see **[docs/SETUP.md](docs/SETUP.md)**. For how we tag and publish releases, see **[docs/RELEASING.md](docs/RELEASING.md)**.
@@ -74,6 +80,20 @@ After applying or resetting, **restart Brave Browser** for changes to take effec
   cowardly --apply-file=./my-settings.yaml
   ```
 
+- **Re-apply saved state** (e.g. after a restart when MDM or the organization has reverted settings). Cowardly saves your last-applied preset or file to `~/.config/cowardly/cowardly.yaml`; use `--reapply` to restore it:
+
+  ```bash
+  cowardly --reapply
+  ```
+
+- **Install login hook** — Run `cowardly --reapply` automatically at every login (installs a Launch Agent). Useful when your Mac is managed and policies are re-applied on boot:
+
+  ```bash
+  cowardly --install-login-hook
+  ```
+
+  To remove: `rm ~/Library/LaunchAgents/com.cowardly.reapply.plist`
+
 - **Dry run / diff** — See what would be applied, or which keys would change:
 
   ```bash
@@ -108,9 +128,11 @@ After applying or resetting, **restart Brave Browser** for changes to take effec
   cowardly --backups              # list all backup paths
   cowardly --restore=<path>        # restore user prefs from a backup (path or filename)
   cowardly --delete-backup=<path>  # delete a backup file
+  cowardly --reapply              # re-apply last saved state (~/.config/cowardly/cowardly.yaml)
+  cowardly --install-login-hook    # install Launch Agent to run --reapply at login
   ```
 
-  In the TUI, use **Backups** from the main menu to list backups, then **Enter** to restore or **d** to delete (with confirmation).
+  In the TUI, use **Backups** from the main menu to list backups, then **Enter** to restore or **d** to delete (with confirmation). If settings were reverted (e.g. after restart), the main menu shows a hint and you can press **R** to re-apply your saved preset.
 
 - **Help**
   ```bash
@@ -120,7 +142,7 @@ After applying or resetting, **restart Brave Browser** for changes to take effec
 
 Before apply or reset, the **user plist is backed up** to `~/Library/Application Support/cowardly/backups/`. **Quit Brave (Cmd+Q) before resetting**—if Brave is running, macOS or Brave can rewrite the plist from cache and the reset will not stick. Brave’s in-browser “Restore settings to their original default” cannot remove **managed** policy (the plist in `/Library/Managed Preferences/`). To fully reset, use cowardly’s Reset and **approve the authentication dialog** so the managed plist is removed; then restart Brave.
 
-**Organizational management (MDM / Intune):** If your Mac is managed by an employer or school (e.g. Microsoft Intune), they can push Brave/Chrome policies that override local settings. In that case Rewards/Wallet may stay disabled and “Managed by your organization” will remain even after Reset or reinstalling Brave; only your IT admin can change that. See **[docs/POLICY-ENFORCEMENT.md](docs/POLICY-ENFORCEMENT.md)** for details.
+**Organizational management (MDM / Intune):** If your Mac is managed by an employer or school (e.g. Microsoft Intune), they can push Brave/Chrome policies that override local settings. After a restart, the organization may re-apply its policies and your Cowardly settings can be reverted. Use **`--reapply`** to restore your desired state (saved in `~/.config/cowardly/cowardly.yaml`), or install the **login hook** (`--install-login-hook`) so Cowardly runs `--reapply` at every login. In the TUI, if the current settings differ from your saved state, a message appears and you can press **R** to re-apply. Only your IT admin can remove MDM-applied policies; see **[docs/POLICY-ENFORCEMENT.md](docs/POLICY-ENFORCEMENT.md)** for details.
 
 ## Presets
 

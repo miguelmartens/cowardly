@@ -70,6 +70,16 @@ Your Mac may be **managed by an organization** (MDM, e.g. Microsoft Intune, Jamf
 2. Cowardly and the fresh-brave script **cannot remove** MDM-applied policies. Only your IT admin can change or remove the Brave/Chrome policy for your device.
 3. On an **unmanaged** Mac, Reset and the script clear local plists and Brave returns to an unmanaged state; on a managed Mac, organizational policy continues to apply until IT changes it.
 
+### Settings reverted after restart
+
+On a managed Mac, the organization often re-applies its policies at login. That can **overwrite** the local managed plist, so the settings you applied with Cowardly are reverted after a restart.
+
+**What you can do:**
+
+1. **Re-apply** — Cowardly saves your last-applied preset (or file) to **`~/.config/cowardly/cowardly.yaml`**. Run `cowardly --reapply` after logging in to restore your desired state. You may need to approve the macOS authentication dialog again so the managed plist is written.
+2. **Login hook** — Run `cowardly --install-login-hook` once. This installs a Launch Agent that runs `cowardly --reapply` at every login. Your desired state is then re-applied automatically (you may see the auth dialog at login).
+3. **TUI** — When you start the TUI, it compares current settings to the saved desired state. If they differ, it shows a message and you can press **R** to re-apply from the main menu.
+
 ## Summary
 
 | Aspect          | Choice                                                               | Reason                                                              |

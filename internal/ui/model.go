@@ -21,23 +21,25 @@ const (
 )
 
 type model struct {
-	state          state
-	mainList       list.Model
-	presetList     list.Model
-	backupList     list.Model
-	backupPaths    []string
-	confirmPath    string
-	confirmAction  string // "restore" or "delete"
-	customIdx      int
-	customOrder    []int // indices in display order (by category)
-	customToggles  map[int]bool
-	customSettings []config.CustomSetting
-	viewKeys       []string
-	viewScroll     int
-	width          int
-	height         int
-	err            string
-	msg            string
+	state            state
+	mainList         list.Model
+	presetList       list.Model
+	backupList       list.Model
+	backupPaths      []string
+	confirmPath      string
+	confirmAction    string // "restore" or "delete"
+	customIdx        int
+	customOrder      []int // indices in display order (by category)
+	customToggles    map[int]bool
+	customSettings   []config.CustomSetting
+	viewKeys         []string
+	viewScroll       int
+	width            int
+	height           int
+	err              string
+	msg              string
+	settingsReverted bool   // true if desired state exists but current differs (e.g. after MDM revert)
+	revertedPreset   string // preset id from desired state, for message
 }
 
 // Brave brand orange and palette (Brave orange #ff631c, lighter accent #ff9f5c).
@@ -136,19 +138,21 @@ func NewModel() model {
 	backupList.SetShowStatusBar(false)
 
 	return model{
-		state:          stateMain,
-		mainList:       mainList,
-		presetList:     presetList,
-		backupList:     backupList,
-		backupPaths:    nil,
-		confirmPath:    "",
-		confirmAction:  "",
-		customIdx:      0,
-		customOrder:    order,
-		customToggles:  toggles,
-		customSettings: customSettings,
-		viewKeys:       viewKeys,
-		viewScroll:     0,
+		state:            stateMain,
+		mainList:         mainList,
+		presetList:       presetList,
+		backupList:       backupList,
+		backupPaths:      nil,
+		confirmPath:      "",
+		confirmAction:    "",
+		customIdx:        0,
+		customOrder:      order,
+		customToggles:    toggles,
+		customSettings:   customSettings,
+		viewKeys:         viewKeys,
+		viewScroll:       0,
+		settingsReverted: false,
+		revertedPreset:   "",
 	}
 }
 

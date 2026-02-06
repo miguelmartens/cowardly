@@ -43,7 +43,7 @@ Adding a platform means a new backend (e.g. under `internal/brave`) while keepin
 
 - **Current Brave settings view** — Improve alignment/formatting of the “View current settings” output so the first entry and list are easier to scan (e.g. consistent indentation, column alignment).
 - **Accessibility** — Consider keyboard-only navigation and any screen-reader hints if the TUI gains more complex views.
-- **Clearer feedback** — When managed policies cannot be applied (e.g. MDM overrides), consider a short in-TUI note or link to [POLICY-ENFORCEMENT.md](POLICY-ENFORCEMENT.md).
+- **Clearer feedback** — When managed policies cannot be applied (e.g. MDM overrides), consider a short in-TUI note or link to [POLICY-ENFORCEMENT.md](POLICY-ENFORCEMENT.md). (Partially done: TUI now detects reverted settings and offers Re-apply.)
 
 ## Policy enforcement and docs
 
