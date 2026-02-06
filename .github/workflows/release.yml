@@ -32,7 +32,7 @@ jobs:
             else
               ARCH_NAME="$GOARCH"
             fi
-            GOOS="$GOOS" GOARCH="$GOARCH" go build -o cowardly -ldflags="-s -w" ./cmd/cowardly
+            GOOS="$GOOS" GOARCH="$GOARCH" go build -o cowardly -ldflags="-s -w -X main.Version=${VERSION}" ./cmd/cowardly
             DIRNAME="cowardly_${VERSION}_${GOOS}_${ARCH_NAME}"
             mkdir -p "$DIRNAME"
             cp cowardly CHANGELOG.md LICENSE README.md "$DIRNAME/"

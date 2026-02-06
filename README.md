@@ -139,7 +139,7 @@ After applying or resetting, **restart Brave Browser** for changes to take effec
 - **Print current settings** (user and enforced/managed when present)
 
   ```bash
-  cowardly --view
+  cowardly --current, -c
   cowardly -v
   ```
 

@@ -15,6 +15,9 @@ import (
 	"github.com/cowardly/cowardly/internal/userconfig"
 )
 
+// Version is set at build time via -ldflags (e.g. -ldflags "-X main.Version=v0.2.0"). If unset, builds show "dev".
+var Version = "dev"
+
 func main() {
 	if !brave.IsMacOS() {
 		fmt.Fprintln(os.Stderr, "cowardly only supports macOS.")
@@ -28,8 +31,11 @@ func main() {
 		case arg == "help" || arg == "h":
 			printUsage()
 			return
-		case arg == "view" || arg == "v":
-			view()
+		case arg == "version" || arg == "v":
+			versionInfo()
+			return
+		case arg == "current" || arg == "c":
+			current()
 			return
 		case arg == "reset" || arg == "r":
 			reset()
@@ -90,6 +96,15 @@ func main() {
 	}
 }
 
+func versionInfo() {
+	fmt.Printf("Cowardly version: %s\n", Version)
+	if v := brave.BraveVersion(); v != "" {
+		fmt.Printf("Brave version: %s\n", v)
+	} else {
+		fmt.Println("Brave version: (not installed or unknown)")
+	}
+}
+
 func findPreset(id string) *presets.Preset {
 	plist, _ := presets.AllWithError()
 	if plist == nil {
@@ -137,7 +152,7 @@ func applyPreset(presetID string) {
 	}
 	p := findPreset(presetID)
 	if p == nil {
-		fmt.Fprintf(os.Stderr, "Preset %q not found. Use --view to list preset IDs from presets.\n", presetID)
+		fmt.Fprintf(os.Stderr, "Preset %q not found. Use --current to list preset IDs from presets.\n", presetID)
 		os.Exit(1)
 	}
 	if path, err := brave.BackupUserPlist(); err == nil {
@@ -257,7 +272,7 @@ func reset() {
 	}
 }
 
-func view() {
+func current() {
 	keys := []string{
 		"MetricsReportingEnabled", "SafeBrowsingExtendedReportingEnabled",
 		"UrlKeyedAnonymizedDataCollectionEnabled", "FeedbackSurveysEnabled",
@@ -265,9 +280,6 @@ func view() {
 		"BraveAIChatEnabled", "TorDisabled", "SyncDisabled",
 		"ShoppingListEnabled", "AlwaysOpenPdfExternally", "TranslateEnabled",
 		"SpellcheckEnabled", "PromotionsEnabled", "DnsOverHttpsMode",
-	}
-	if v := brave.BraveVersion(); v != "" {
-		fmt.Printf("Brave version: %s\n", v)
 	}
 	if brave.ManagedPlistExists() {
 		fmt.Println("(Managed plist present — enforced values shown when set)")
@@ -454,7 +466,8 @@ Usage:
   cowardly --diff=<id>             Show which keys would change (current -> preset)
   cowardly --export=<path>         Export current settings to YAML file
   cowardly --reset, -r             Reset all Brave policy settings and exit
-  cowardly --view, -v              Print current settings and exit
+  cowardly --version, -v          Print cowardly and Brave version and exit
+  cowardly --current, -c          Print current settings and exit
   cowardly --backups, -b           List all backup plist paths
   cowardly --restore=<path>        Restore user prefs from a backup (path or filename)
   cowardly --delete-backup=<path>  Delete a backup file
