@@ -1,5 +1,7 @@
 ![](assets/cowardly-logo.png)
 
+[![Build](https://github.com/miguelmartens/cowardly/actions/workflows/build.yml/badge.svg)](https://github.com/miguelmartens/cowardly/actions/workflows/build.yml) [![Release](https://github.com/miguelmartens/cowardly/actions/workflows/release.yml/badge.svg)](https://github.com/miguelmartens/cowardly/actions/workflows/release.yml)
+
 # Cowardly
 
 **Cowardly** removes Brave’s bold features and returns it to a quiet, minimal, privacy-first browser on macOS. It is a small TUI (terminal UI) and CLI that applies Brave Browser policy preferences via macOS managed preferences (or `defaults`) so you can disable rewards, wallet, VPN, AI, telemetry, and other bloat without editing plists by hand.
