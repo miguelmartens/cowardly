@@ -1,0 +1,46 @@
+# Privacy Guides supplement — applies on top of Quick Debloat preset
+# Source: https://www.privacyguides.org/en/desktop-browsers/#brave
+#
+# Contains only settings NOT in presets. Apply Privacy Guides = Quick Debloat + this.
+# Policy keys from Brave policy templates (brave-core).
+#
+# No policy available (configure manually in Brave):
+#   - Use default filter lists (behavioral recommendation)
+#   - Block Scripts (optional; disables JS entirely)
+#   - Uncheck social media components (Shields UI)
+#   - Automatically remove permissions from unused sites
+#   - Use Google services for push messaging
+settings:
+  # Data Collection — P3A, daily usage ping (Brave-specific; not in presets)
+  - key: BraveP3AEnabled
+    value: false
+    type: bool
+  - key: BraveStatsPingEnabled
+    value: false
+    type: bool
+  # Shields — Trackers, HTTPS, fingerprinting, forget on close
+  - key: DefaultBraveAdblockSetting
+    value: 2
+    type: integer
+  - key: DefaultBraveHttpsUpgradeSetting
+    value: 2
+    type: integer
+  - key: DefaultBraveFingerprintingV2Setting
+    value: 3
+    type: integer
+  - key: DefaultBraveRemember1PStorageSetting
+    value: 2
+    type: integer
+  # Privacy & Security — AMP, tracking redirects, language FP, V8 JIT
+  - key: BraveDeAmpEnabled
+    value: true
+    type: bool
+  - key: BraveDebouncingEnabled
+    value: true
+    type: bool
+  - key: BraveReduceLanguageEnabled
+    value: true
+    type: bool
+  - key: DefaultJavaScriptJitSetting
+    value: 2
+    type: integer

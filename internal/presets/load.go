@@ -39,6 +39,25 @@ type settingRow = SettingRow
 
 var cachedPresets []Preset
 
+// HasPreset returns true if the given id matches a built-in preset.
+func HasPreset(id string) bool {
+	return FindPreset(id) != nil
+}
+
+// FindPreset returns the preset with the given id, or nil if not found.
+func FindPreset(id string) *Preset {
+	plist, _ := AllWithError()
+	if plist == nil {
+		return nil
+	}
+	for i := range plist {
+		if plist[i].ID == id {
+			return &plist[i]
+		}
+	}
+	return nil
+}
+
 // All returns built-in presets loaded from configs/presets/*.yaml (embedded).
 // Order is determined by filename (01-quick, 02-max-privacy, ...).
 // On load error, logs and returns nil.
@@ -194,6 +213,81 @@ func LoadSettingsFromFile(path string) ([]brave.Setting, error) {
 		return nil, fmt.Errorf("parse YAML: %w", err)
 	}
 	return convertSettings(f.Settings)
+}
+
+// PrivacyGuidesURL is the source URL for the Privacy Guides Brave recommendations.
+const PrivacyGuidesURL = "https://www.privacyguides.org/en/desktop-browsers/#brave"
+
+// PrivacyGuidesBasePresetID is the preset used as base when applying Privacy Guides (Quick Debloat).
+const PrivacyGuidesBasePresetID = "quick"
+
+// LoadPrivacyGuides loads the Privacy Guides supplement (settings not in presets) from the embedded FS.
+func LoadPrivacyGuides() ([]brave.Setting, error) {
+	data, err := fs.ReadFile(configs.PrivacyGuidesFS, "supplements/privacy-guides/recommendations.yaml")
+	if err != nil {
+		return nil, fmt.Errorf("read Privacy Guides config: %w", err)
+	}
+	var f settingsFile
+	if err := yaml.Unmarshal(data, &f); err != nil {
+		return nil, fmt.Errorf("parse Privacy Guides YAML: %w", err)
+	}
+	return convertSettings(f.Settings)
+}
+
+// PrivacyGuidesMerged returns base preset + Privacy Guides supplement.
+// basePresetID selects which preset to use as base (e.g. "quick", "max-privacy").
+func PrivacyGuidesMerged(basePresetID string) ([]brave.Setting, error) {
+	supplement, err := LoadPrivacyGuides()
+	if err != nil {
+		return nil, err
+	}
+	return MergePresetWithSupplement(basePresetID, supplement)
+}
+
+// MergePresetWithSupplement returns base preset settings + supplement.
+// Used when loading privacy-guides state from config (supplement from file).
+func MergePresetWithSupplement(basePresetID string, supplement []brave.Setting) ([]brave.Setting, error) {
+	if basePresetID == "custom" {
+		return nil, fmt.Errorf("use MergeSettingsWithSupplement with base from userconfig for custom base")
+	}
+	plist, err := AllWithError()
+	if err != nil {
+		return nil, fmt.Errorf("load presets: %w", err)
+	}
+	var base *Preset
+	for i := range plist {
+		if plist[i].ID == basePresetID {
+			base = &plist[i]
+			break
+		}
+	}
+	if base == nil {
+		return nil, fmt.Errorf("base preset %q not found", basePresetID)
+	}
+	return MergeSettingsWithSupplement(base.Settings, supplement), nil
+}
+
+// MergeSettingsWithSupplement merges base settings with supplement (supplement overlays base for same keys).
+func MergeSettingsWithSupplement(base, supplement []brave.Setting) []brave.Setting {
+	byKey := make(map[string]brave.Setting)
+	for _, s := range base {
+		byKey[s.Key] = s
+	}
+	for _, s := range supplement {
+		byKey[s.Key] = s
+	}
+	seen := make(map[string]bool)
+	var out []brave.Setting
+	for _, s := range base {
+		out = append(out, byKey[s.Key])
+		seen[s.Key] = true
+	}
+	for _, s := range supplement {
+		if !seen[s.Key] {
+			out = append(out, s)
+		}
+	}
+	return out
 }
 
 // WriteSettingsToFile writes settings to a YAML file (same format as preset settings).

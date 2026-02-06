@@ -9,3 +9,9 @@ import "embed"
 //
 //go:embed presets/*.yaml
 var PresetsFS embed.FS
+
+// PrivacyGuidesFS contains the Privacy Guides recommended Brave configuration.
+// See https://www.privacyguides.org/en/desktop-browsers/#brave
+//
+//go:embed supplements/privacy-guides/*.yaml
+var PrivacyGuidesFS embed.FS

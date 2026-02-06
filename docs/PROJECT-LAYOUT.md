@@ -4,19 +4,19 @@ This project follows the [Standard Go Project Layout](https://github.com/golang-
 
 ## Directories in use
 
-| Directory            | Purpose                                                                                                                                                                                      |
-| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **cmd/cowardly**     | Main application entrypoint. Minimal `main` that imports from `internal` and runs the TUI or CLI.                                                                                            |
-| **internal/**        | Private application code. Not importable by other projects.                                                                                                                                  |
-| **internal/brave**   | Brave Browser preferences (macOS `defaults` read/write).                                                                                                                                     |
-| **internal/config**  | Custom setting definitions for the TUI.                                                                                                                                                      |
-| **internal/presets** | Loads preset definitions from embedded YAML in **configs/presets/** (one `.yaml` file per preset; add a file there and rebuild to add a preset). See [ADDING-PRESETS.md](ADDING-PRESETS.md). |
-| **internal/ui**      | Bubble Tea TUI (model, update, view).                                                                                                                                                        |
-| **configs/**         | Configuration templates. **configs/presets/** holds preset YAML files (embedded at build). See [configs/README.md](../configs/README.md).                                                    |
-| **scripts/**         | Build and tool scripts; invoked by the root Makefile.                                                                                                                                        |
-| **docs/**            | Design and user documentation (this file). [PLATFORMS.md](PLATFORMS.md) describes current (macOS) and possible future (Linux, Windows) support.                                              |
-| **assets/**          | Images and logos (e.g. `cowardly-logo.png`).                                                                                                                                                 |
-| **bin/**             | Build output; executable from `make build`. Gitignored.                                                                                                                                      |
+| Directory            | Purpose                                                                                                                                                                                                                                            |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **cmd/cowardly**     | Main application entrypoint. Minimal `main` that imports from `internal` and runs the TUI or CLI.                                                                                                                                                  |
+| **internal/**        | Private application code. Not importable by other projects.                                                                                                                                                                                        |
+| **internal/brave**   | Brave Browser preferences (macOS `defaults` read/write).                                                                                                                                                                                           |
+| **internal/config**  | Custom setting definitions for the TUI.                                                                                                                                                                                                            |
+| **internal/presets** | Loads preset definitions from embedded YAML in **configs/presets/** (one `.yaml` file per preset; add a file there and rebuild to add a preset). See [ADDING-PRESETS.md](ADDING-PRESETS.md).                                                       |
+| **internal/ui**      | Bubble Tea TUI (model, update, view).                                                                                                                                                                                                              |
+| **configs/**         | Configuration templates. **configs/presets/** holds preset YAML files; **configs/supplements/** holds supplements (e.g. **supplements/privacy-guides/** for Privacy Guides). All embedded at build. See [configs/README.md](../configs/README.md). |
+| **scripts/**         | Build and tool scripts; invoked by the root Makefile.                                                                                                                                                                                              |
+| **docs/**            | Design and user documentation (this file). [PLATFORMS.md](PLATFORMS.md) describes current (macOS) and possible future (Linux, Windows) support.                                                                                                    |
+| **assets/**          | Images and logos (e.g. `cowardly-logo.png`).                                                                                                                                                                                                       |
+| **bin/**             | Build output; executable from `make build`. Gitignored.                                                                                                                                                                                            |
 
 ## Not used
 

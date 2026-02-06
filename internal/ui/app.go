@@ -16,6 +16,8 @@ import (
 )
 
 type applyPresetMsg struct{ idx int }
+type applyPrivacyGuidesMsg struct{ basePresetID string }
+type privacyGuidesCheckBaseMsg struct{ basePresetID string }
 type applyCustomMsg struct{}
 type resetDoneMsg struct {
 	err            error
@@ -87,22 +89,27 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.presetList.ResetSelected()
 					return m, nil
 				case 1:
+					return m, func() tea.Msg {
+						base, _ := userconfig.PrivacyGuidesBaseFromConfig()
+						return privacyGuidesCheckBaseMsg{basePresetID: base}
+					}
+				case 2:
 					m.state = stateCustom
 					m.customIdx = 0
 					return m, nil
-				case 2:
+				case 3:
 					m.state = stateViewSettings
 					m.viewScroll = 0
 					return m, nil
-				case 3:
+				case 4:
 					m.state = stateResetConfirm
 					return m, nil
-				case 4:
+				case 5:
 					return m, func() tea.Msg {
 						paths, err := brave.ListBackups()
 						return backupsListMsg{paths: paths, err: err}
 					}
-				case 5:
+				case 6:
 					return m, tea.Quit
 				}
 			}
@@ -126,6 +133,50 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			var cmd tea.Cmd
 			m.presetList, cmd = m.presetList.Update(msg)
 			return m, cmd
+
+		case statePrivacyGuidesBase:
+			switch msg.String() {
+			case "q", "esc":
+				m.state = stateMain
+				m.presetList.SetItems(presetListItems(false))
+				m.privacyGuidesBasePresetID = ""
+				return m, nil
+			case "enter":
+				idx := m.presetList.Index()
+				if idx == 0 {
+					m.state = stateMain
+					m.presetList.SetItems(presetListItems(false))
+					m.privacyGuidesBasePresetID = ""
+					return m, nil
+				}
+				plist := presets.All()
+				if idx > 0 && idx <= len(plist) {
+					m.privacyGuidesBasePresetID = plist[idx-1].ID
+					m.state = statePrivacyGuidesConfirm
+				} else if m.privacyGuidesHasCustom && idx == len(plist)+1 {
+					m.privacyGuidesBasePresetID = "custom"
+					m.state = statePrivacyGuidesConfirm
+				}
+				return m, nil
+			}
+			var cmd tea.Cmd
+			m.presetList, cmd = m.presetList.Update(msg)
+			return m, cmd
+
+		case statePrivacyGuidesConfirm:
+			switch msg.String() {
+			case "y", "Y", "enter":
+				baseID := m.privacyGuidesBasePresetID
+				if baseID == "" {
+					baseID = presets.PrivacyGuidesBasePresetID
+				}
+				return m, func() tea.Msg { return applyPrivacyGuidesMsg{basePresetID: baseID} }
+			case "n", "N", "q", "esc":
+				m.state = stateMain
+				m.privacyGuidesBasePresetID = ""
+				return m, nil
+			}
+			return m, nil
 
 		case stateCustom:
 			n := len(m.customOrder)
@@ -269,6 +320,21 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
+	case privacyGuidesCheckBaseMsg:
+		if msg.basePresetID != "" {
+			m.privacyGuidesBasePresetID = msg.basePresetID
+			m.state = statePrivacyGuidesConfirm
+		} else {
+			m.state = statePrivacyGuidesBase
+			m.presetList.ResetSelected()
+			m.privacyGuidesBasePresetID = ""
+			baseItems := presetListItems(true)
+			desired, _ := userconfig.Read()
+			m.privacyGuidesHasCustom = desired != nil && desired.Preset == "custom" && len(desired.Settings) > 0
+			m.presetList.SetItems(baseItems)
+		}
+		return m, nil
+
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
@@ -303,6 +369,59 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.msg += fmt.Sprintf("Applied preset: %s (enforced). Restart Brave for changes.", p.Name)
 			} else {
 				m.msg += fmt.Sprintf("Applied preset: %s. Restart Brave. For enforced policies, approve the macOS authentication dialog when you apply.", p.Name)
+			}
+		}
+		m.state = stateMain
+		return m, nil
+
+	case applyPrivacyGuidesMsg:
+		baseID := msg.basePresetID
+		if baseID == "" {
+			baseID = presets.PrivacyGuidesBasePresetID
+		}
+		var settings []brave.Setting
+		var err error
+		if baseID == "custom" {
+			desired, _ := userconfig.Read()
+			if desired == nil || len(desired.Settings) == 0 {
+				m.err = "No custom settings in config to use as base"
+				m.state = stateMain
+				return m, nil
+			}
+			supplement, err := presets.LoadPrivacyGuides()
+			if err != nil {
+				m.err = err.Error()
+				m.state = stateMain
+				return m, nil
+			}
+			settings = presets.MergeSettingsWithSupplement(desired.Settings, supplement)
+		} else {
+			settings, err = presets.PrivacyGuidesMerged(baseID)
+			if err != nil {
+				m.err = err.Error()
+				m.state = stateMain
+				return m, nil
+			}
+		}
+		if brave.BraveRunning() {
+			m.msg = "Brave is running — quit for a clean apply. "
+		} else {
+			m.msg = ""
+		}
+		if path, err := brave.BackupUserPlist(); err == nil {
+			m.msg += fmt.Sprintf("Backed up to:\n%s\n\n", path)
+		}
+		managed, err := brave.ApplySettings(settings)
+		if err != nil {
+			m.err = err.Error()
+			m.msg = ""
+		} else {
+			m.settingsReverted = false
+			_ = userconfig.WritePrivacyGuides(baseID)
+			if managed {
+				m.msg += fmt.Sprintf("Applied Privacy Guides recommendations (enforced). Restart Brave for changes.\n\nSource: %s", presets.PrivacyGuidesURL)
+			} else {
+				m.msg += fmt.Sprintf("Applied Privacy Guides recommendations. Restart Brave. For enforced policies, approve the macOS authentication dialog when you apply.\n\nSource: %s", presets.PrivacyGuidesURL)
 			}
 		}
 		m.state = stateMain
@@ -449,6 +568,26 @@ func (m model) View() string {
 		return mainView
 	case statePreset:
 		return titleStyle.Render("Choose a preset") + "\n" + m.presetList.View() + dimStyle.Render("\nenter apply  esc back")
+	case statePrivacyGuidesBase:
+		return titleStyle.Render("Privacy Guides — Choose base preset") + "\n\n" +
+			dimStyle.Render("Privacy Guides supplement will be applied on top of the selected preset.\n\n") +
+			m.presetList.View() + dimStyle.Render("\nenter select  esc back")
+	case statePrivacyGuidesConfirm:
+		baseID := m.privacyGuidesBasePresetID
+		if baseID == "" {
+			baseID = presets.PrivacyGuidesBasePresetID
+		}
+		baseName := baseID
+		for _, p := range presets.All() {
+			if p.ID == baseID {
+				baseName = p.Name
+				break
+			}
+		}
+		return titleStyle.Render("Privacy Guides recommendations") + "\n\n" +
+			"Apply Privacy Guides supplement on top of " + activeStyle.Render(baseName) + "?\n\n" +
+			dimStyle.Render("Source: "+presets.PrivacyGuidesURL) + "\n" +
+			"Press " + activeStyle.Render("y") + " or " + activeStyle.Render("Enter") + " to apply, " + activeStyle.Render("n") + " or " + activeStyle.Render("Esc") + " to go back."
 	case stateCustom:
 		return m.customView()
 	case stateViewSettings:

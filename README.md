@@ -76,6 +76,7 @@ cowardly
 ```
 
 - **Apply a preset** — Choose a preset (Quick Debloat, Maximum Privacy, Balanced, Performance, Developer, Strict Parental) and apply it.
+- **Privacy Guides recommendations** — Apply [Privacy Guides](https://www.privacyguides.org/en/desktop-browsers/#brave) Brave config as a supplement on top of any preset or Custom (Quick Debloat by default; no overlap with presets).
 - **Custom** — Toggle individual settings by category (Telemetry, Privacy & Security, Brave Features, Performance & Bloat), then apply.
 - **View current settings** — See which policy keys are set.
 - **Reset all to default** — Remove all Brave policy settings (restore defaults).
@@ -93,6 +94,14 @@ After applying or resetting, **restart Brave Browser** for changes to take effec
   cowardly --apply
   cowardly -a
   cowardly --apply=max-privacy
+  ```
+
+- **Privacy Guides recommendations** — Apply [Privacy Guides](https://www.privacyguides.org/en/desktop-browsers/#brave) supplement on top of any preset or Custom:
+
+  ```bash
+  cowardly --privacy-guides              # base from config or Quick Debloat
+  cowardly --privacy-guides=max-privacy  # base: Maximum Privacy
+  cowardly --privacy-guides=custom       # base: your saved Custom settings
   ```
 
 - **Apply from a YAML file** (same format as preset `settings`):
@@ -191,7 +200,7 @@ Use **Space** to toggle, **Enter** to apply, **a** to select all, **n** to selec
 
 ## Project layout
 
-The repo follows the [Standard Go Project Layout](https://github.com/golang-standards/project-layout). See **[docs/PROJECT-LAYOUT.md](docs/PROJECT-LAYOUT.md)** for the directory overview, **[docs/PLATFORMS.md](docs/PLATFORMS.md)** for current and possible future platform support (macOS / Linux / Windows), and **[docs/POLICY-ENFORCEMENT.md](docs/POLICY-ENFORCEMENT.md)** for how policy enforcement works on macOS (managed vs user preferences, raw XML plist, AppleScript auth). A summary of implemented features is in **[docs/FEATURES.md](docs/FEATURES.md)**; possible future improvements are in **[docs/FUTURE.md](docs/FUTURE.md)**.
+The repo follows the [Standard Go Project Layout](https://github.com/golang-standards/project-layout). See **[docs/PROJECT-LAYOUT.md](docs/PROJECT-LAYOUT.md)** for the directory overview, **[docs/PLATFORMS.md](docs/PLATFORMS.md)** for current and possible future platform support (macOS / Linux / Windows), and **[docs/POLICY-ENFORCEMENT.md](docs/POLICY-ENFORCEMENT.md)** for how policy enforcement works on macOS (managed vs user preferences, raw XML plist, AppleScript auth). A summary of implemented features is in **[docs/FEATURES.md](docs/FEATURES.md)**; possible future improvements are in **[docs/FUTURE.md](docs/FUTURE.md)**. For the Privacy Guides supplement, see **[docs/PRIVACY-GUIDES.md](docs/PRIVACY-GUIDES.md)**.
 
 ## Development
 

@@ -43,7 +43,6 @@ Adding a platform means a new backend (e.g. under `internal/brave`) while keepin
 
 - **Current Brave settings view** — Improve alignment/formatting of the “View current settings” output so the first entry and list are easier to scan (e.g. consistent indentation, column alignment).
 - **Accessibility** — Consider keyboard-only navigation and any screen-reader hints if the TUI gains more complex views.
-- **Clearer feedback** — When managed policies cannot be applied (e.g. MDM overrides), consider a short in-TUI note or link to [POLICY-ENFORCEMENT.md](POLICY-ENFORCEMENT.md). (Partially done: TUI now detects reverted settings and offers Re-apply.)
 
 ## Policy enforcement and docs
 
@@ -57,4 +56,4 @@ Adding a platform means a new backend (e.g. under `internal/brave`) while keepin
 
 ## Contributing
 
-If you want to work on any of these, open an issue to align with maintainers. For presets (degoogle, sovereign), add YAML under `configs/presets/` and extend the preset schema or Custom settings only if new key types are required. See [ADDING-PRESETS.md](ADDING-PRESETS.md) and [Contributing](../README.md#contributing) in the main README.
+If you want to work on any of these, open an issue to align with maintainers. For presets (degoogle, sovereign), add YAML under `configs/presets/` and extend the preset schema or Custom settings only if new key types are required. See [ADDING-PRESETS.md](ADDING-PRESETS.md). For supplements (e.g. new Privacy Guides–style overlays), add YAML under `configs/supplements/`; see [PRIVACY-GUIDES.md](PRIVACY-GUIDES.md) for the current supplement structure. See [Contributing](../README.md#contributing) in the main README.
