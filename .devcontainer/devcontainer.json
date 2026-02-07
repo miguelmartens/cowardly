@@ -1,0 +1,32 @@
+{
+  "name": "Cowardly",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "..",
+    "options": ["--init"]
+  },
+  "workspaceFolder": "/workspace",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+  "remoteUser": "vscode",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.go",
+        "ms-azuretools.vscode-docker"
+      ],
+      "settings": {
+        "go.useLanguageServer": true,
+        "go.lintTool": "golangci-lint",
+        "go.lintFlags": ["--fast"],
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "[go]": {
+          "editor.defaultFormatter": "golang.go",
+          "editor.formatOnSave": true
+        }
+      }
+    }
+  },
+  "postCreateCommand": "go version && go mod download && make build",
+  "postStartCommand": "go version"
+}
