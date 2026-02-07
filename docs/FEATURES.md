@@ -47,6 +47,7 @@ See [POLICY-ENFORCEMENT.md](POLICY-ENFORCEMENT.md) for the rationale and impleme
 | Export             | `--export=<path>` — current settings to YAML                                                                                                          |
 | Reset              | `--reset`, `-r`                                                                                                                                       |
 | Current settings   | `--current`, `-c` — print current Brave policy settings                                                                                               |
+| Version            | `--version`, `-v` — print Cowardly and Brave version and exit                                                                                         |
 | Backups            | `--backups`, `-b` (list), `--restore=<path>`, `--delete-backup=<path>`                                                                                |
 | Help               | `--help`, `-h`                                                                                                                                        |
 
