@@ -4,11 +4,21 @@ Thank you for your interest in contributing. This document explains how to get s
 
 ## Requirements
 
-- **macOS** (cowardly is macOS-only today)
-- **Go 1.25.6+** — [Install Go](https://go.dev/dl/)
-- Optional for local checks: **golangci-lint**, **prettier**, **yamllint** (CI will run these on your PR if you don’t have them)
+- **To run the app:** **macOS** (cowardly is macOS-only at runtime).
+- **To build, test, and lint:** either use the **dev container** (recommended on Linux/WSL or if you prefer a container) or install locally:
+  - **Go 1.25.6+** — [Install Go](https://go.dev/dl/)
+  - Optional for local checks: **golangci-lint**, **prettier**, **yamllint** (CI will run these on your PR if you don’t have them).
 
 ## Getting started
+
+**Option A — Dev container (macOS, Linux, WSL)**
+
+1. **Fork** the repo on GitHub, clone your fork, then open it in **VS Code** or **Cursor**.
+2. Install the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension.
+3. Run **“Reopen in Container”** from the command palette. The container provides Go, make, Prettier, yamllint, and golangci-lint.
+4. In the container terminal, run `make build` and `make test` to confirm everything works. (The TUI itself only runs on macOS; use the host if you need to test it.)
+
+**Option B — Local (macOS)**
 
 1. **Fork** the repository on GitHub, then clone your fork:
 
@@ -24,7 +34,7 @@ Thank you for your interest in contributing. This document explains how to get s
    make run
    ```
 
-   See [README.md](README.md) for usage and [docs/SETUP.md](docs/SETUP.md) for repo setup (Renovate, Gitleaks, etc.).
+See [README.md](README.md) for usage and [docs/SETUP.md](docs/SETUP.md) for repo setup (Renovate, Gitleaks, etc.).
 
 ## Making changes
 

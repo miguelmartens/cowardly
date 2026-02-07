@@ -63,6 +63,8 @@ For a clean build and run (removes the binary first):
 make dev
 ```
 
+**Dev container (macOS, Linux, WSL):** Open this repo in VS Code or Cursor, install the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension, then **Reopen in Container**. The container provides Go, make, Node (Prettier), yamllint, and golangci-lint for build, test, lint, and format. The Cowardly binary is macOS-only at runtime; inside the container you can still run `make build`, `make test`, `make lint`, and `make format-check`.
+
 For repository setup and Renovate automation, see **[docs/SETUP.md](docs/SETUP.md)**. For how we tag and publish releases, see **[docs/RELEASING.md](docs/RELEASING.md)**.
 
 ## Usage
