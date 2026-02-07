@@ -9,10 +9,7 @@
   "remoteUser": "root",
   "customizations": {
     "vscode": {
-      "extensions": [
-        "golang.go",
-        "ms-azuretools.vscode-docker"
-      ],
+      "extensions": ["golang.go", "ms-azuretools.vscode-docker"],
       "settings": {
         "go.useLanguageServer": true,
         "go.lintTool": "golangci-lint",
