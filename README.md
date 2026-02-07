@@ -148,7 +148,14 @@ After applying or resetting, **restart Brave Browser** for changes to take effec
 - **Print current settings** (user and enforced/managed when present)
 
   ```bash
-  cowardly --current, -c
+  cowardly --current
+  cowardly -c
+  ```
+
+- **Print version** (Cowardly and Brave)
+
+  ```bash
+  cowardly --version
   cowardly -v
   ```
 
