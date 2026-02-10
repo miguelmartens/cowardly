@@ -61,6 +61,10 @@ cowardly --dry-run=privacy-guides:max-privacy
 cowardly --diff=privacy-guides:custom
 ```
 
+## “Forget me when I close this site” / re-login after restart
+
+The supplement sets **DefaultBraveRemember1PStorageSetting** to **2** (remember first-party storage). If you still have to re-login or re-accept cookies, or the Brave UI shows “Forget me when I close this site” as enabled and greyed out, see **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** (disable the `brave-forget-first-party-storage` flag in `brave://flags`).
+
 ## Manual configuration
 
 Some Privacy Guides recommendations have no Brave policy keys. Configure these in Brave yourself:
