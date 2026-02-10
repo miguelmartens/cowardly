@@ -209,7 +209,7 @@ Use **Space** to toggle, **Enter** to apply, **a** to select all, **n** to selec
 
 ## Project layout
 
-The repo follows the [Standard Go Project Layout](https://github.com/golang-standards/project-layout). See **[docs/PROJECT-LAYOUT.md](docs/PROJECT-LAYOUT.md)** for the directory overview, **[docs/PLATFORMS.md](docs/PLATFORMS.md)** for current and possible future platform support (macOS / Linux / Windows), and **[docs/POLICY-ENFORCEMENT.md](docs/POLICY-ENFORCEMENT.md)** for how policy enforcement works on macOS (managed vs user preferences, raw XML plist, AppleScript auth). A summary of implemented features is in **[docs/FEATURES.md](docs/FEATURES.md)**; possible future improvements are in **[docs/FUTURE.md](docs/FUTURE.md)**. For the Privacy Guides supplement, see **[docs/PRIVACY-GUIDES.md](docs/PRIVACY-GUIDES.md)**.
+The repo follows the [Standard Go Project Layout](https://github.com/golang-standards/project-layout). See **[docs/PROJECT-LAYOUT.md](docs/PROJECT-LAYOUT.md)** for the directory overview, **[docs/PLATFORMS.md](docs/PLATFORMS.md)** for current and possible future platform support (macOS / Linux / Windows), and **[docs/POLICY-ENFORCEMENT.md](docs/POLICY-ENFORCEMENT.md)** for how policy enforcement works on macOS (managed vs user preferences, raw XML plist, AppleScript auth). A summary of implemented features is in **[docs/FEATURES.md](docs/FEATURES.md)**; possible future improvements are in **[docs/FUTURE.md](docs/FUTURE.md)**. For the Privacy Guides supplement, see **[docs/PRIVACY-GUIDES.md](docs/PRIVACY-GUIDES.md)**. If you have to re-login or re-accept cookies after closing Brave, or “Forget me when I close this site” is stuck on, see **[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)**.
 
 ## Development
 
