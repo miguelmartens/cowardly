@@ -4,6 +4,7 @@ package ui
 import (
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/cowardly/cowardly/internal/brave"
 	"github.com/cowardly/cowardly/internal/config"
 	"github.com/cowardly/cowardly/internal/presets"
 	"github.com/cowardly/cowardly/internal/userconfig"
@@ -73,6 +74,14 @@ func braveListDelegate() list.DefaultDelegate {
 	return d
 }
 
+// tuiTitle returns the main TUI title (Brave or Brave Beta).
+func tuiTitle() string {
+	if brave.IsBeta() {
+		return "Cowardly — Brave Browser Beta Debloater"
+	}
+	return "Cowardly — Brave Browser Debloater"
+}
+
 // braveListStyles returns list styles with Brave orange title bar and filter cursor.
 func braveListStyles() list.Styles {
 	sty := list.DefaultStyles()
@@ -96,7 +105,7 @@ func NewModel() model {
 		item{title: "Exit", desc: "Quit cowardly"},
 	}
 	mainList := list.New(mainItems, braveListDelegate(), 0, 0)
-	mainList.Title = "Cowardly — Brave Browser Debloater"
+	mainList.Title = tuiTitle()
 	mainList.Styles = braveListStyles()
 	mainList.SetShowStatusBar(false)
 

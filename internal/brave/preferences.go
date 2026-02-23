@@ -31,12 +31,7 @@ const plistXMLFooter = `
 </plist>
 `
 
-const (
-	// Domain is the macOS defaults domain for Brave Browser (user preferences).
-	Domain = "com.brave.Browser"
-	// ManagedPreferencesPath is the system path for mandatory policies (Brave enforces these and hides Rewards/Wallet etc.).
-	ManagedPreferencesPath = "/Library/Managed Preferences/com.brave.Browser"
-)
+// Domain and ManagedPreferencesPath are now functions; see variant.go.
 
 // ValueType is the plist value type for a preference.
 type ValueType string
@@ -153,7 +148,7 @@ func writeToPath(path string, s Setting) error {
 
 // Write applies a single setting to user preferences using `defaults write`.
 func Write(s Setting) error {
-	return writeToPath(Domain, s)
+	return writeToPath(Domain(), s)
 }
 
 // WriteAll applies multiple settings to user preferences; stops on first error.
@@ -191,7 +186,7 @@ func WriteAllToManaged(settings []Setting) error {
 	}
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
-	src := filepath.Join(tmpDir, "com.brave.Browser.plist")
+	src := filepath.Join(tmpDir, Domain()+".plist")
 	xmlContent := settingsToPlistXML(settings)
 	if err := os.WriteFile(src, []byte(xmlContent), 0600); err != nil {
 		return fmt.Errorf("write temp plist: %w", err)
@@ -201,8 +196,9 @@ func WriteAllToManaged(settings []Setting) error {
 	// and never interpolated into the shell command, so there is no shell injection from presets.
 	// Use AppleScript "with administrator privileges" so a GUI dialog appears (password or Touch ID).
 	// chmod 644 so the plist is readable by Brave (per hi-one / managed preferences practice).
-	shellCmd := fmt.Sprintf("mkdir -p \"/Library/Managed Preferences\" && cp %s \"/Library/Managed Preferences/com.brave.Browser.plist\" && chown root:wheel \"/Library/Managed Preferences/com.brave.Browser.plist\" && chmod 644 \"/Library/Managed Preferences/com.brave.Browser.plist\"",
-		shellSingleQuoted(src))
+	managedPlist := shellSingleQuoted(ManagedPreferencesPath() + ".plist")
+	shellCmd := fmt.Sprintf("mkdir -p \"/Library/Managed Preferences\" && cp %s %s && chown root:wheel %s && chmod 644 %s",
+		shellSingleQuoted(src), managedPlist, managedPlist, managedPlist)
 	script := `do shell script "` + escapeForAppleScript(shellCmd) + `" with administrator privileges`
 	ctx, cancel := context.WithTimeout(context.Background(), osascriptTimeout)
 	defer cancel()
@@ -234,7 +230,7 @@ func Read(key string) (string, bool) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), defaultsTimeout)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "defaults", "read", Domain, key)
+	cmd := exec.CommandContext(ctx, "defaults", "read", Domain(), key)
 	out, err := cmd.CombinedOutput()
 	if err != nil || ctx.Err() != nil {
 		return "", false
@@ -247,7 +243,7 @@ func ManagedPlistExists() bool {
 	if !IsMacOS() {
 		return false
 	}
-	_, err := os.Stat(ManagedPreferencesPath + ".plist")
+	_, err := os.Stat(ManagedPreferencesPath() + ".plist")
 	return err == nil
 }
 
@@ -259,7 +255,7 @@ func ReadManaged(key string) (string, bool) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), defaultsTimeout)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "defaults", "read", ManagedPreferencesPath, key)
+	cmd := exec.CommandContext(ctx, "defaults", "read", ManagedPreferencesPath(), key)
 	out, err := cmd.CombinedOutput()
 	if err != nil || ctx.Err() != nil {
 		return "", false
@@ -274,7 +270,7 @@ func Delete(key string) error {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), defaultsTimeout)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "defaults", "delete", Domain, key)
+	cmd := exec.CommandContext(ctx, "defaults", "delete", Domain(), key)
 	_ = cmd.Run() // ignore error if key missing
 	return nil
 }
@@ -289,7 +285,7 @@ func Reset() (hadManaged, managedRemoved bool, err error) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), defaultsTimeout)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "defaults", "delete", Domain)
+	cmd := exec.CommandContext(ctx, "defaults", "delete", Domain())
 	if out, runErr := cmd.CombinedOutput(); runErr != nil {
 		outStr := string(out)
 		// Domain already absent is fine (no user plist to delete).
@@ -303,7 +299,7 @@ func Reset() (hadManaged, managedRemoved bool, err error) {
 	if userPath, pathErr := UserPreferencesPath(); pathErr == nil {
 		_ = os.Remove(userPath)
 	}
-	managedPath := ManagedPreferencesPath + ".plist"
+	managedPath := ManagedPreferencesPath() + ".plist"
 	if _, statErr := os.Stat(managedPath); statErr == nil {
 		hadManaged = true
 		script := `do shell script "rm -f ` + escapeForAppleScript(shellSingleQuoted(managedPath)) + `" with administrator privileges`
@@ -317,15 +313,12 @@ func Reset() (hadManaged, managedRemoved bool, err error) {
 	return hadManaged, managedRemoved, nil
 }
 
-// BraveAppPath is the default path to the Brave Browser application.
-const BraveAppPath = "/Applications/Brave Browser.app"
-
-// BraveInstalled checks if Brave Browser is installed at BraveAppPath.
+// BraveInstalled checks if Brave Browser is installed at BraveAppPath().
 func BraveInstalled() bool {
 	if !IsMacOS() {
 		return false
 	}
-	info, err := os.Stat(BraveAppPath)
+	info, err := os.Stat(BraveAppPath())
 	return err == nil && info.IsDir()
 }
 
@@ -335,12 +328,12 @@ func BraveVersion() string {
 	if !IsMacOS() {
 		return ""
 	}
-	infoPlist := filepath.Join(BraveAppPath, "Contents", "Info.plist")
+	infoPlist := filepath.Join(BraveAppPath(), "Contents", "Info.plist")
 	if _, err := os.Stat(infoPlist); err != nil {
 		return ""
 	}
 	// defaults read expects the path without .plist extension
-	domain := filepath.Join(BraveAppPath, "Contents", "Info")
+	domain := filepath.Join(BraveAppPath(), "Contents", "Info")
 	ctx, cancel := context.WithTimeout(context.Background(), defaultsTimeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "defaults", "read", domain, "CFBundleShortVersionString")
@@ -359,7 +352,7 @@ func BraveRunning() bool {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), defaultsTimeout)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "pgrep", "-x", "Brave Browser")
+	cmd := exec.CommandContext(ctx, "pgrep", "-x", braveProcessName())
 	err := cmd.Run()
 	return err == nil
 }
@@ -373,7 +366,7 @@ func UserPreferencesPath() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("home dir: %w", err)
 	}
-	return filepath.Join(home, "Library", "Preferences", Domain+".plist"), nil
+	return filepath.Join(home, "Library", "Preferences", Domain()+".plist"), nil
 }
 
 // BackupDir returns the backups directory path (~/Library/Application Support/cowardly/backups).

@@ -5,7 +5,7 @@ This guide covers installing Cowardly from a **release archive** (no Go or repo 
 ## Prerequisites
 
 - **macOS** (Intel or Apple Silicon)
-- **Brave Browser** installed at `/Applications/Brave Browser.app`
+- **Brave Browser** installed at `/Applications/Brave Browser.app` (or Brave Beta at `/Applications/Brave Browser Beta.app`; use `--beta` to target it)
 
 ## Install with Homebrew
 

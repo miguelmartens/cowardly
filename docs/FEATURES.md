@@ -5,7 +5,7 @@ This document summarizes what Cowardly currently does. For possible future work,
 ## Core: policy application
 
 - **Apply settings** — Write Brave policy keys (bool, integer, string) to macOS. Used by presets and Custom mode.
-- **Managed preferences first** — Tries to write to `/Library/Managed Preferences/com.brave.Browser.plist` so Brave enforces policies (Rewards, Wallet, etc. hidden). Falls back to user preferences (`~/Library/Preferences/com.brave.Browser.plist`) if the user cancels the auth dialog or lacks admin rights.
+- **Managed preferences first** — Tries to write to `/Library/Managed Preferences/com.brave.Browser.plist` (or `com.brave.Browser.beta.plist` with `--beta`) so Brave enforces policies (Rewards, Wallet, etc. hidden). Falls back to user preferences (`~/Library/Preferences/com.brave.Browser.plist` or `com.brave.Browser.beta.plist`) if the user cancels the auth dialog or lacks admin rights.
 - **Raw XML plist for managed** — Managed plist is generated as valid XML (not via `defaults write`) and copied into place with correct ownership and permissions.
 - **Administrator privileges via AppleScript** — macOS authentication dialog (password or Touch ID) for writing to managed preferences; no password in the terminal.
 - **Reset** — Removes all Brave policy settings: deletes user plist keys (and the plist file when empty) and removes the managed plist when present. Returns whether a managed plist existed and whether it was removed. Reset is blocked if Brave is running (user is told to quit Brave first).
@@ -37,6 +37,7 @@ See [POLICY-ENFORCEMENT.md](POLICY-ENFORCEMENT.md) for the rationale and impleme
 
 | Feature            | Flags                                                                                                                                                 |
 | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Brave Beta         | `--beta` — target Brave Browser Beta instead of stable (use with any command)                                                                         |
 | Apply preset       | `--apply`, `-a`, `--apply=<id>` (e.g. `max-privacy`, `balanced`)                                                                                      |
 | Privacy Guides     | `--privacy-guides` (base from config or quick), `--privacy-guides=<base>` (e.g. max-privacy, custom)                                                  |
 | Apply from file    | `--apply-file=<path>` (YAML with same `settings` format as presets)                                                                                   |

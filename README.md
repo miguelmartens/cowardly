@@ -12,7 +12,7 @@ Inspired by [SlimBrave](https://github.com/ltx0101/SlimBrave), [Debloat Brave Br
 
 - **macOS** only today (uses `defaults` and `~/Library/Preferences/com.brave.Browser.plist`)
 - **Go 1.25.6+** to build
-- **Brave Browser** installed in `/Applications/Brave Browser.app` (tested with Brave stable; policy keys may vary by Brave version)
+- **Brave Browser** installed in `/Applications/Brave Browser.app` (or **Brave Browser Beta** in `/Applications/Brave Browser Beta.app` with `--beta`; policy keys may vary by Brave version)
 
 **Platform support:** Cowardly currently supports **macOS only**. Support for **Linux** and **Windows** may be added in the future; on those platforms Brave uses different policy mechanisms (e.g. JSON on Linux, registry/Group Policy on Windows). See **[docs/PLATFORMS.md](docs/PLATFORMS.md)** for details and contribution notes.
 
@@ -145,6 +145,14 @@ After applying or resetting, **restart Brave Browser** for changes to take effec
   ```bash
   cowardly --reset
   cowardly -r
+  ```
+
+- **Target Brave Browser Beta** — Use `--beta` with any command to manage Brave Beta instead of stable:
+
+  ```bash
+  cowardly --beta --apply
+  cowardly --beta --reset
+  cowardly --beta
   ```
 
 - **Print current settings** (user and enforced/managed when present)

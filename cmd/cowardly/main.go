@@ -26,6 +26,12 @@ func main() {
 
 	args := os.Args[1:]
 	for _, arg := range args {
+		if strings.TrimLeft(arg, "-") == "beta" {
+			brave.UseBeta(true)
+			break
+		}
+	}
+	for _, arg := range args {
 		arg = strings.TrimLeft(arg, "-")
 		switch {
 		case arg == "help" || arg == "h":
@@ -91,7 +97,11 @@ func main() {
 	}
 
 	if !brave.BraveInstalled() {
-		fmt.Fprintln(os.Stderr, "Brave Browser not found in /Applications. Install Brave first.")
+		which := "Brave Browser"
+		if brave.IsBeta() {
+			which = "Brave Browser Beta"
+		}
+		fmt.Fprintf(os.Stderr, "%s not found in /Applications. Install Brave first.\n", which)
 		os.Exit(1)
 	}
 
@@ -104,10 +114,14 @@ func main() {
 
 func versionInfo() {
 	fmt.Printf("Cowardly version: %s\n", Version)
+	which := "Brave"
+	if brave.IsBeta() {
+		which = "Brave Beta"
+	}
 	if v := brave.BraveVersion(); v != "" {
-		fmt.Printf("Brave version: %s\n", v)
+		fmt.Printf("%s version: %s\n", which, v)
 	} else {
-		fmt.Println("Brave version: (not installed or unknown)")
+		fmt.Printf("%s version: (not installed or unknown)\n", which)
 	}
 }
 
@@ -206,7 +220,11 @@ func applyPrivacyGuides(basePresetID string) {
 		basePresetID = presets.PrivacyGuidesBasePresetID
 	}
 	if !brave.BraveInstalled() {
-		fmt.Fprintln(os.Stderr, "Brave Browser not found in /Applications.")
+		which := "Brave Browser"
+		if brave.IsBeta() {
+			which = "Brave Browser Beta"
+		}
+		fmt.Fprintf(os.Stderr, "%s not found in /Applications.\n", which)
 		os.Exit(1)
 	}
 	if brave.BraveRunning() {
@@ -238,7 +256,11 @@ func applyPrivacyGuides(basePresetID string) {
 
 func applyPreset(presetID string) {
 	if !brave.BraveInstalled() {
-		fmt.Fprintln(os.Stderr, "Brave Browser not found in /Applications.")
+		which := "Brave Browser"
+		if brave.IsBeta() {
+			which = "Brave Browser Beta"
+		}
+		fmt.Fprintf(os.Stderr, "%s not found in /Applications.\n", which)
 		os.Exit(1)
 	}
 	if brave.BraveRunning() {
@@ -269,7 +291,11 @@ func applyPreset(presetID string) {
 
 func applyFile(path string) {
 	if !brave.BraveInstalled() {
-		fmt.Fprintln(os.Stderr, "Brave Browser not found in /Applications.")
+		which := "Brave Browser"
+		if brave.IsBeta() {
+			which = "Brave Browser Beta"
+		}
+		fmt.Fprintf(os.Stderr, "%s not found in /Applications.\n", which)
 		os.Exit(1)
 	}
 	if brave.BraveRunning() {
@@ -437,7 +463,11 @@ func deleteBackup(path string) {
 
 func reapply() {
 	if !brave.BraveInstalled() {
-		fmt.Fprintln(os.Stderr, "Brave Browser not found in /Applications.")
+		which := "Brave Browser"
+		if brave.IsBeta() {
+			which = "Brave Browser Beta"
+		}
+		fmt.Fprintf(os.Stderr, "%s not found in /Applications.\n", which)
 		os.Exit(1)
 	}
 	if brave.BraveRunning() {
@@ -494,7 +524,16 @@ func installLoginHook() {
 	if err != nil {
 		cowardlyPath = "cowardly" // fallback to PATH
 	}
+	reapplyArgs := []string{"--reapply"}
+	if brave.IsBeta() {
+		reapplyArgs = []string{"--beta", "--reapply"}
+	}
 	plistPath := filepath.Join(launchAgentDir, "com.cowardly.reapply.plist")
+	programArgs := append([]string{cowardlyPath}, reapplyArgs...)
+	programArgsXML := ""
+	for _, a := range programArgs {
+		programArgsXML += fmt.Sprintf("    <string>%s</string>\n", escapePlistString(a))
+	}
 	plist := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -503,9 +542,7 @@ func installLoginHook() {
   <string>com.cowardly.reapply</string>
   <key>ProgramArguments</key>
   <array>
-    <string>%s</string>
-    <string>--reapply</string>
-  </array>
+%s  </array>
   <key>RunAtLoad</key>
   <true/>
   <key>StandardErrorPath</key>
@@ -514,7 +551,7 @@ func installLoginHook() {
   <string>%s/reapply.log</string>
 </dict>
 </plist>
-`, cowardlyPath, dir, dir)
+`, programArgsXML, dir, dir)
 	if err := os.WriteFile(plistPath, []byte(plist), 0644); err != nil {
 		fmt.Fprintf(os.Stderr, "install-login-hook: %v\n", err)
 		os.Exit(1)
@@ -522,6 +559,16 @@ func installLoginHook() {
 	fmt.Printf("Installed Launch Agent at %s\n", plistPath)
 	fmt.Println("Cowardly will run `cowardly --reapply` at login. To re-apply to managed preferences you may need to approve the macOS dialog when you log in.")
 	fmt.Println("To remove: rm", plistPath)
+}
+
+// escapePlistString escapes a string for use inside a plist <string> element.
+func escapePlistString(s string) string {
+	s = strings.ReplaceAll(s, "&", "&amp;")
+	s = strings.ReplaceAll(s, "<", "&lt;")
+	s = strings.ReplaceAll(s, ">", "&gt;")
+	s = strings.ReplaceAll(s, "\"", "&quot;")
+	s = strings.ReplaceAll(s, "'", "&apos;")
+	return s
 }
 
 // resolveBackupPath returns the full path if path is a filename matching a backup, or path if it's already a full path that exists.
@@ -551,6 +598,7 @@ func printUsage() {
 
 Usage:
   cowardly                        Start the TUI
+  cowardly --beta                 Target Brave Browser Beta (use with any command)
   cowardly --apply, -a             Apply Quick Debloat preset and exit
   cowardly --apply=<id>            Apply preset by ID (e.g. quick, max-privacy)
   cowardly --privacy-guides [=base] Apply Privacy Guides supplement (default base: quick)
@@ -568,5 +616,5 @@ Usage:
   cowardly --delete-backup=<path>  Delete a backup file
   cowardly --help, -h              Show this help
 
-Restart Brave Browser after applying or resetting settings.`)
+Use --beta to target Brave Browser Beta instead of stable. Restart Brave after applying or resetting settings.`)
 }

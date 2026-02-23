@@ -553,7 +553,7 @@ func (m model) View() string {
 
 	switch m.state {
 	case stateMain:
-		mainView := titleStyle.Render("Cowardly — Brave Browser Debloater") + "\n"
+		mainView := titleStyle.Render(tuiTitle()) + "\n"
 		if m.settingsReverted {
 			revertHint := "Settings may have been reverted (e.g. after restart). Press " + activeStyle.Render("R") + " to re-apply your saved preset."
 			if m.revertedPreset != "" {
