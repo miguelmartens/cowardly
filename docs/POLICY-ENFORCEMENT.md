@@ -8,8 +8,8 @@ Brave (like Chromium) supports policy keys that disable features such as Rewards
 
 | Location                | Path                                                   | Enforced?                                                                  |
 | ----------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------- |
-| **User preferences**    | `~/Library/Preferences/com.brave.Browser.plist`        | **No** — Brave may still show Rewards, Wallet, etc.                        |
-| **Managed preferences** | `/Library/Managed Preferences/com.brave.Browser.plist` | **Yes** — Brave treats these as mandatory and hides/ disables the features |
+| **User preferences**    | `~/Library/Preferences/com.brave.Browser.plist` (or `.beta` with `--beta`)        | **No** — Brave may still show Rewards, Wallet, etc.                        |
+| **Managed preferences** | `/Library/Managed Preferences/com.brave.Browser.plist` (or `.beta` with `--beta`)   | **Yes** — Brave treats these as mandatory and hides/ disables the features |
 
 If you only run `defaults write com.brave.Browser BraveRewardsDisabled -bool true`, the key is written to the user plist. After restarting Brave, the UI can still show Rewards and Wallet. To get **enforced** behavior (features hidden/disabled), the same keys must be present in the **managed** plist under `/Library/Managed Preferences/`. That path is the standard macOS location for mandatory (MDM-style) policies.
 
